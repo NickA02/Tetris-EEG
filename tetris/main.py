@@ -1,8 +1,9 @@
 # main.py
 
+from random import randint
 import pygame
 from settings import *
-from difficulties import increase_difficulty_lines_cleared
+from difficulties import *
 from game import Game
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -10,9 +11,15 @@ pygame.display.set_caption("Tetris (Modular)")
 
 font = pygame.font.SysFont("Arial", 24)
 clock = pygame.time.Clock()
-game = Game()
 
-increase_difficulty = increase_difficulty_lines_cleared
+difficulties = [increase_difficulty_lines_cleared,
+                constant_difficulty,
+                increase_difficulty_adaptive,
+                increase_difficulty_blocks_placed]
+difficulty = randint(0, len(difficulties)-1)
+increase_difficulty = difficulties[difficulty]
+
+game = Game(difficulty_level=difficulty)
 
 def draw_board(screen, board, colors):
     for y in range(GRID_HEIGHT):

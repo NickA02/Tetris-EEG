@@ -7,7 +7,7 @@ from settings import *
 import analytics
 
 class Game:
-    def __init__(self):
+    def __init__(self, difficulty_level=0):
         self.board = Board()
         self.current_piece = Piece()
         self.next_piece = Piece()
@@ -19,6 +19,7 @@ class Game:
         self.game_over = False
         self.isolated_empty_sum = 0
         self.isolated_empty_count = 0
+        self.difficulty_level = difficulty_level  #For logging purposes, will not change during game
     def update_isolated_empty(self):
         val = self.board.count_isolated_empty()
         self.isolated_empty_sum += val
@@ -47,7 +48,7 @@ class Game:
         self.piece_count += 1
         if not self.board.valid_position(self.current_piece):
             self.game_over = True
-            analytics.on_game_over(self.board.get_state(), self.score)
+            analytics.on_game_over(self.board.get_state(), self.score, self)
 
     def move(self, dx, dy):
         p = self.current_piece.copy()

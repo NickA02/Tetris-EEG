@@ -4,6 +4,13 @@ from piece import Piece
 # You can extend these functions to send data to your analytics system,
 # or perform online learning, etc.
 
+difficulties = {
+    0: "increase_difficulty_lines_cleared",
+    1: "constant_difficulty",
+    2: "increase_difficulty_adaptive",
+    3: "increase_difficulty_blocks_placed"
+}
+
 def log_move(board_state, piece: Piece, action, reward=0):
     """
     board_state: (np.array) the board grid after the move
@@ -14,5 +21,5 @@ def log_move(board_state, piece: Piece, action, reward=0):
     # Example: print for now, replace with analytics call
     print(f"[ANALYTICS] Action: {action}, Piece: {piece.type}, Reward: {reward}")
 
-def on_game_over(board_state, score):
-    print(f"[ANALYTICS] Game Over. Final Score: {score}")
+def on_game_over(board_state, score, game):
+    print(f"[ANALYTICS] Game Over. Final Score: {score}. Difficulty Level: {difficulties[game.difficulty_level]}")

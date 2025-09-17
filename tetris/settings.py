@@ -1,5 +1,4 @@
 # settings.py
-
 # Window size
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 800
@@ -8,6 +7,8 @@ WINDOW_HEIGHT = 800
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
 BLOCK_SIZE = 40
+
+
 
 # Colors (R, G, B)
 COLORS = {

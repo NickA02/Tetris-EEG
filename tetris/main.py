@@ -2,8 +2,8 @@
 
 import pygame
 from settings import *
+from difficulties import increase_difficulty_lines_cleared
 from game import Game
-
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Tetris (Modular)")
@@ -11,6 +11,8 @@ pygame.display.set_caption("Tetris (Modular)")
 font = pygame.font.SysFont("Arial", 24)
 clock = pygame.time.Clock()
 game = Game()
+
+increase_difficulty = increase_difficulty_lines_cleared
 
 def draw_board(screen, board, colors):
     for y in range(GRID_HEIGHT):
@@ -78,12 +80,9 @@ def main():
                     game.drop()
                 move_timer = 0
 
-        # Dynamic difficulty: average isolated empty blocks and pieces placed
-        game.update_isolated_empty()
-        avg_isolated_empty = game.get_isolated_empty_avg()
-        piece_factor = game.piece_count * 10
-        fall_speed = 500 + avg_isolated_empty*2 - piece_factor
-        fall_speed = max(min(fall_speed, 600), min_fall_speed)
+
+        fall_speed = increase_difficulty(game)
+
         if fall_time > fall_speed and not game.game_over:
             game.tick()
             fall_time = 0

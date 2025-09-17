@@ -1,4 +1,11 @@
-# Tetris-EEG (A WIP Mame)
+# Tetris-EEG (A WIP Name)
+## Initial Setup
+Current tetris implementation only tested with Python 3.13.7
+
+Once you have set up your python environment, run
+```zsh
+pip install -r requirements.txt
+```
 
 ## Playing the game/Data Collection
 

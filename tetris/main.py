@@ -16,6 +16,7 @@ difficulties = [increase_difficulty_lines_cleared,
                 constant_difficulty,
                 increase_difficulty_adaptive,
                 increase_difficulty_blocks_placed]
+
 difficulty = randint(0, len(difficulties)-1)
 increase_difficulty = difficulties[difficulty]
 

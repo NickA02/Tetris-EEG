@@ -1,14 +1,17 @@
-# DEAP Emotion Recognition — Trial‑level, Per‑channel, and Windowed MIL
+# DEAP Emotion Recognition
 
 This repository contains code to reproduce emotion recognition experiments on the **DEAP** dataset using **bandpower features**. It also includes code to run various models to compare results across multiple settings. 
 
-## Overview
 
 ## Deep Dataset Download
 
 We use DEAP dataset from Kaggle. This by default will download it to the ```.cache``` folder. So the code modes it to the current directory. 
 
 To download the dataset, run  - ```python3 deap_dataset.py```
+
+---
+
+## Experiments
 
 ### DEAP Baseline Classifier
 
@@ -27,7 +30,8 @@ Outputs include **Accuracy, Balanced Accuracy, and Macro F1-Score**.
 
 Run the script - `python deap_baseline.py`
 
-### Experiments — Feature Extraction & Baseline Classifiers
+
+### DEAP Baseline Python Script
 
 This notebook is complementary to `deap_baseline.py`, but structured for interactive experimentation.
 
@@ -37,11 +41,14 @@ It focuses on:
 - **Classical ML models** (Linear SVM, calibrated classifiers)
 - **Cross-validation evaluation** (subject-dependent and LOSO)
 
-### MIL (Multiple-Instance Learning) for DEAP — Notebook
+---
+### MIL (Multiple-Instance Learning) for DEAP 
 
 This Jupyter notebook implements **Multiple-Instance Learning (MIL)** with attention for emotion recognition on **EEG windowed features** from the **DEAP** dataset. It treats each **trial** as a *bag* of short-time **windows** (instances), learns attention weights over windows, and predicts **valence/arousal** (supports multi-output).
 
 Run the script - It is a notebook. Run on Jupyter. 
+
+---
 
 ### MLP for Emotion Classification (DEAP)
 
@@ -51,6 +58,8 @@ It explores:
 - **Single-output models**: predict either binary *valence* or *arousal* separately.
 - **Multi-output models**: jointly predict binary *valence* and *arousal*.
 - **Categorical outputs (1–9 scale)**: instead of binary classification, emotions are classified into one of 9 categories.
+
+---
 
 ### ANN, SVM, RF, and KNN for Emotion Classification (DEAP)
 
@@ -62,6 +71,8 @@ It implements and evaluates:
 - **KNN (K-Nearest Neighbors)**
 
 It also explores **feature-level fusion** across EEG channels and reports **cross-validation results**.
+
+---
 
 ### LSTM + AutoKeras (NOT RUN FULLY YET. LOSS IS NOT DIVERGING. NEEDS MODIFICATION)
 
@@ -78,8 +89,11 @@ It includes:
     - Automatically searches for a suitable neural architecture given the data.
     - Reduces manual hyperparameter tuning.
 
+---
+
 ## Directory Structure 
 
+```
 EEG Prediction/
 │
 ├── datasets/DEAP/deap-dataset/         # DEAP dataset files (not included in repo, must be downloaded)
@@ -105,7 +119,7 @@ EEG Prediction/
 ├── deap_dataset.py                     # Utility for dataset loading/preprocessing
 ├── README.md                           # Project overview & instructions
 └── requirements.txt                    # Dependencies
-
+```
 
 ## Contibute
 
@@ -115,11 +129,6 @@ Clone the repo and install dependencies:
 git clone https://github.com/<your-username>/EEG-Prediction.git
 cd EEG-Prediction
 pip install -r requirements.txt
-```
-
-(Optional) If working with notebooks locally:
-```bash
-pip install jupyter notebook
 ```
 
 ---
@@ -150,7 +159,7 @@ If you add a new dependency:
    ```bash
    pip freeze | grep <package> >> requirements.txt
    ```
-   
+
 ---
 
 

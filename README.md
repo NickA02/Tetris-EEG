@@ -28,3 +28,16 @@ python main.py
 | C | Hold/Swap | Stashes current piece in the Hold cell, swaps with piece in hold cell if available |
 
 
+
+## EEG Prediction Module
+
+This repository also contains a dedicated subproject for **EEG-based emotion recognition** in the directory `EEG Prediction`.
+
+Inside, you’ll find:
+- **notebooks/** → experiments with classical ML and deep learning models (MLP, MIL, LSTM, ANN/SVM/RF/KNN).  
+- **scripts/** → reusable Python scripts for baselines and dataset utilities.  
+- **datasets/** → expected DEAP dataset structure (not included, must be downloaded separately).  
+- **requirements.txt** → dependencies for running notebooks and scripts.  
+- **CONTRIBUTING.md** → contribution guidelines for adding new experiments or scripts.  
+
+Please read the [EEG Prediction README](EEG%20Prediction/README.md) before running experiments or submitting changes.

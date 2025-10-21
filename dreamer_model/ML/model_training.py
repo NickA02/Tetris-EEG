@@ -29,6 +29,9 @@ def train_random_forest(
     X_test: pd.DataFrame,
     y_train: pd.DataFrame,
     y_test: pd.DataFrame,
+    estimators: int = 100,
+    max_depth: int = 8,
+    n_jobs: int = -1,
 ):
     rf = RandomForestRegressor(
         n_estimators=300, max_depth=None, random_state=42, n_jobs=-1, verbose=True
@@ -43,8 +46,11 @@ def train_knn(
     X_test: pd.DataFrame,
     y_train: pd.DataFrame,
     y_test: pd.DataFrame,
+    neighbors: int = 1,
+    weights: str = "distance",
+    n_jobs: int = -1,
 ):
-    knn = KNeighborsRegressor(n_neighbors=1, weights="distance", n_jobs=-1)
+    knn = KNeighborsRegressor(n_neighbors=neighbors, weights=weights, n_jobs=n_jobs)
     knn.fit(X_train, y_train)
 
     return knn, X_test, y_test
@@ -56,11 +62,11 @@ def train_svr(
     y_train: pd.DataFrame,
     y_test: pd.DataFrame,
 ):
-    svr = SVR(kernel="rbf", C=1.0, epsilon=0.1, verbose=True) # TODO: try "linear" also
+    svr = SVR(kernel="rbf", C=1.0, epsilon=0.1, verbose=True)  # TODO: try "linear" also
     svr.fit(X_train, y_train.values.ravel())
 
     return svr, X_test, y_test
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     X_train, X_test, arousal_train, arousal_test = omit_patient_video(target="arousal")

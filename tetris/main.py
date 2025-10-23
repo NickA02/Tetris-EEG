@@ -1,10 +1,9 @@
-# main.py
-
 from random import randint
 import pygame
-from settings import *
-from difficulties import *
-from game import Game
+from .settings import *
+from .difficulties import *
+from .game import Game
+from experiment import experiment as exp
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Tetris (Modular)")
@@ -48,6 +47,8 @@ def draw_mini_piece(screen, piece, pos_x, pos_y):
                 pygame.draw.rect(screen, COLORS["border"], rect, 2)
 
 def main():
+    exp.init_epoc_record()
+
     fall_time = 0
     fall_speed = 600  # ms
     min_fall_speed = 50  # ms

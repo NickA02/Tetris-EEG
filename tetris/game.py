@@ -1,10 +1,10 @@
 # game.py
 
 import pygame
-from piece import Piece
-from board import Board
-from settings import *
-import analytics
+from .piece import Piece
+from .board import Board
+from .settings import *
+from .analytics import *
 
 class Game:
     def __init__(self, difficulty_level=0):
@@ -48,7 +48,7 @@ class Game:
         self.piece_count += 1
         if not self.board.valid_position(self.current_piece):
             self.game_over = True
-            analytics.on_game_over(self.board.get_state(), self.score, self)
+            on_game_over(self.board.get_state(), self.score, self)
 
     def move(self, dx, dy):
         p = self.current_piece.copy()
@@ -56,7 +56,7 @@ class Game:
         p.y += dy
         if self.board.valid_position(p):
             self.current_piece = p
-            analytics.log_move(self.board.grid, self.current_piece, f"move_{dx}_{dy}")
+            log_move(self.board.grid, self.current_piece, f"move_{dx}_{dy}")
             return True
         return False
 
@@ -65,7 +65,7 @@ class Game:
         p.rotate()
         if self.board.valid_position(p):
             self.current_piece = p
-            analytics.log_move(self.board.grid, self.current_piece, "rotate")
+            log_move(self.board.grid, self.current_piece, "rotate")
             return True
         return False
 
@@ -78,7 +78,7 @@ class Game:
             if cleared:
                 self.score += [0, 40, 100, 300, 1200][cleared]
                 self.lines_cleared += cleared
-                analytics.log_move(self.board.grid, self.current_piece, "clear", reward=cleared)
+                log_move(self.board.grid, self.current_piece, "clear", reward=cleared)
             self.spawn_piece()
 
     def hard_drop(self):

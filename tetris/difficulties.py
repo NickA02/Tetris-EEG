@@ -1,5 +1,5 @@
 
-from game import Game
+from .game import Game
 
 def increase_difficulty_lines_cleared(game: Game, max_speed=100, min_speed=600):
     """Increase fall speed based on lines cleared."""

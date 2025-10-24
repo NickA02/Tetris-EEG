@@ -37,15 +37,50 @@ async def set_session_id():
 
 
 def init_epoc_record():
-    asyncio.run(EpocX.main())
+    def runner():
+        asyncio.run(EpocX.main())
+
+    t = threading.Thread(target=runner, daemon=True)
+    t.start()
+    return t
 
 
-async def insert_data():
+def insert_data(
+    user_id: int,
+    object_count: int,
+    time_elapsed: float,
+    arousal: int,
+    valence: int,
+    fall_speed: float,
+    difficulty_type: str,
+):
     session_id = get_global_session_id()
-    df = pd.DataFrame(EpocX.pow_data_batch)
-    EpocX.pow_data_batch.clear()
-    save_eeg_data("datasets/EEGO.csv", session_id, df)
+    save_eeg_data(
+        "dreamer_model/datasets/curr_sesh.csv",
+        user_id,
+        session_id,
+        object_count,
+        time_elapsed,
+        arousal,
+        valence,
+        fall_speed,
+        difficulty_type,
+        EpocX.pow_data_batch,
+    )
+    EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
 
 
-if __name__ == "__main__":
-    init_epoc_record()
+def save_curr_sesh(path_a: str, path_b: str) -> pd.DataFrame:
+    df_a = pd.read_csv(path_a)
+    cols_a = df_a.columns.tolist()
+
+    df_b = pd.read_csv(path_b, usecols=cols_a)
+
+    cols_b_set = set(pd.read_csv(path_b, nrows=0).columns.tolist())
+
+    # Concatenate row-wise
+    combined = pd.concat([df_a, df_b[cols_a]], ignore_index=True)
+    
+    combined.to_csv(path_a, index=False)
+
+    return combined

@@ -86,7 +86,7 @@ async def create_session(websocket, cortex_token, headset_id):
 
 
 async def subscribe_to_streams(websocket, cortex_token, session_id):
-    print("\n==== subscribe (band power) ====")
+    print("\n==== subscribe (power bands) ====")
     return await send_json_rpc(
         websocket,
         "subscribe",
@@ -95,7 +95,7 @@ async def subscribe_to_streams(websocket, cortex_token, session_id):
     )
 
 
-pow_data_batch = []
+pow_data_batch = pd.DataFrame()
 CHANNELS = [
     "AF3",
     "F7",
@@ -112,11 +112,15 @@ CHANNELS = [
     "F8",
     "AF4",
 ]
-BANDS = ["delta", "theta", "alpha", "betaL", "betaH", "gamma"]
+BANDS = ["theta", "alpha", "betaL", "betaH", "gamma"]
+cols = [f"{ch}_{band}" for ch in CHANNELS for band in BANDS]
+cols.append("timestamp")
+pow_data_batch = pd.DataFrame(columns=cols)
 
 
 async def handle_incoming_data(websocket):
     batch_size = -1
+    row = []
     while True:
         data_msg = await websocket.recv()
         data = json.loads(data_msg)
@@ -125,17 +129,11 @@ async def handle_incoming_data(websocket):
             # 'data["pow"]' is a 70-element list in this order:
             #  AF3/theta, AF3/alpha, AF3/betaL, AF3/betaH, AF3/gamma,
             #  F7/theta, F7/alpha, ... (14 channels × 5 bands)
-            channel_values = data["pow"]
-            row = {}
-            row["timestamp"] = data["time"]
+            row = data["pow"]
+            row.append(data["time"])
 
-            for ch_index, ch_name in enumerate(CHANNELS):
-                for b_index, band_name in enumerate(BANDS):
-                    pow_index = ch_index * len(BANDS) + b_index
-                    col_name = f"{ch_name}_{band_name}"
-                    row[col_name] = channel_values[pow_index]
+            pow_data_batch.loc[len(pow_data_batch)] = row
 
-            pow_data_batch.append(row)
 
             if len(pow_data_batch) == batch_size:
                 pow_data_batch.clear()

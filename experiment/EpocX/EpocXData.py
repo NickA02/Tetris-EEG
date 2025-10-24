@@ -2,13 +2,31 @@ from datetime import datetime
 import pandas as pd
 import os
 
-def save_eeg_data(filename: str, user_id: int, session_id: str, df: pd.DataFrame) -> int:
+
+def save_eeg_data(
+    filename: str, 
+    user_id: int,
+    session_id: int,
+    object_count: int,
+    time_elapsed: float,
+    arousal: int,
+    valence: int,
+    fall_speed: float,
+    difficulty_type: str,
+    df: pd.DataFrame
+) -> int:
     if df is None or df.empty:
         return 0
-    
+
     df_to_write = df.copy()
     df_to_write.insert(0, "user_id", user_id)
     df_to_write.insert(1, "session_id", session_id)
+    df_to_write.insert(2, "object_count", object_count)
+    df_to_write.insert(3, "time_elapsed", time_elapsed)
+    df_to_write.insert(5, "arousal", arousal)
+    df_to_write.insert(6, "valence", valence)
+    df_to_write.insert(7, "fall_speed", fall_speed)
+    df_to_write.insert(8, "difficulty_type", difficulty_type)
 
     file_exists = os.path.exists(filename)
 
@@ -32,5 +50,3 @@ def save_eeg_data(filename: str, user_id: int, session_id: str, df: pd.DataFrame
             encoding="utf-8",
             lineterminator="\n",
         )
-        
-    print(f"Saved EPOC X EEG data (user_id={user_id}, session_id={session_id}) to database.")

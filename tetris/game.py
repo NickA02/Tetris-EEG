@@ -5,6 +5,8 @@ from .piece import Piece
 from .board import Board
 from .settings import *
 from .analytics import *
+import time
+from experiment import experiment as exp
 
 class Game:
     def __init__(self, difficulty_level=0):
@@ -69,7 +71,7 @@ class Game:
             return True
         return False
 
-    def drop(self):
+    def drop(self, user_id, start_time, fall_speed, difficulty):
         # Soft drop
         if not self.move(0, 1):
             # Place the piece
@@ -80,12 +82,21 @@ class Game:
                 self.lines_cleared += cleared
                 log_move(self.board.grid, self.current_piece, "clear", reward=cleared)
             self.spawn_piece()
+            exp.insert_data(
+                user_id,
+                self.piece_count,
+                time.time() - start_time,  # In seconds
+                -1,
+                -1,
+                fall_speed,
+                difficulty,
+            )
 
     def hard_drop(self):
         while self.move(0, 1):
             pass
         self.drop()
 
-    def tick(self):
+    def tick(self, user_id, start_time, fall_speed, difficulty):
         if not self.game_over:
-            self.drop()
+            self.drop(user_id, start_time, fall_speed, difficulty)

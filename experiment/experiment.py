@@ -65,8 +65,10 @@ def insert_data(
         valence,
         fall_speed,
         difficulty_type,
+        EpocX.sensor_contact_quality,
         EpocX.pow_data_batch,
     )
+
     EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
 
 
@@ -75,8 +77,6 @@ def save_curr_sesh(path_a: str, path_b: str) -> pd.DataFrame:
     cols_a = df_a.columns.tolist()
 
     df_b = pd.read_csv(path_b, usecols=cols_a)
-
-    cols_b_set = set(pd.read_csv(path_b, nrows=0).columns.tolist())
 
     # Concatenate row-wise
     combined = pd.concat([df_a, df_b[cols_a]], ignore_index=True)

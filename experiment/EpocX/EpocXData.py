@@ -13,6 +13,7 @@ def save_eeg_data(
     valence: int,
     fall_speed: float,
     difficulty_type: str,
+    sensor_contact_quality: bool,
     df: pd.DataFrame
 ) -> int:
     if df is None or df.empty:
@@ -27,6 +28,7 @@ def save_eeg_data(
     df_to_write.insert(6, "valence", valence)
     df_to_write.insert(7, "fall_speed", fall_speed)
     df_to_write.insert(8, "difficulty_type", difficulty_type)
+    df_to_write.insert(9, "sensor_contact_quality", sensor_contact_quality)
 
     file_exists = os.path.exists(filename)
 
@@ -50,3 +52,4 @@ def save_eeg_data(
             encoding="utf-8",
             lineterminator="\n",
         )
+

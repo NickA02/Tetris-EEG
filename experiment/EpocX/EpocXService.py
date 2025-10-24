@@ -5,15 +5,12 @@ from datetime import datetime
 import time
 import ssl
 import os
-import uuid
-import threading
 import pandas as pd
 from .EpocXData import save_eeg_data
 from dotenv import load_dotenv
 
 
 ## TODO: GET RAW DATA
-## TODO: SAVE DATA CORRECTLY
 
 CORTEX_URL = "wss://127.0.0.1:6868"
 
@@ -90,7 +87,7 @@ async def subscribe_to_streams(websocket, cortex_token, session_id):
     return await send_json_rpc(
         websocket,
         "subscribe",
-        {"cortexToken": cortex_token, "session": session_id, "streams": ["pow"]},
+        {"cortexToken": cortex_token, "session": session_id, "streams": ["pow", "dev"]},
         request_id=7,
     )
 
@@ -116,9 +113,11 @@ BANDS = ["theta", "alpha", "betaL", "betaH", "gamma"]
 cols = [f"{ch}_{band}" for ch in CHANNELS for band in BANDS]
 cols.append("timestamp")
 pow_data_batch = pd.DataFrame(columns=cols)
+sensor_contact_quality = 4
 
 
 async def handle_incoming_data(websocket):
+    global sensor_contact_quality
     batch_size = -1
     row = []
     while True:
@@ -134,9 +133,12 @@ async def handle_incoming_data(websocket):
 
             pow_data_batch.loc[len(pow_data_batch)] = row
 
-
             if len(pow_data_batch) == batch_size:
                 pow_data_batch.clear()
+
+        if "dev" in data:
+            dev = list(data["dev"][2])
+            sensor_contact_quality = sum(dev)/len(dev)
 
 
 async def get_detection_info(websocket, cortex_token, session_id):

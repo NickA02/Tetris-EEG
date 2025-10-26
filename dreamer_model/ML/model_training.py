@@ -7,10 +7,16 @@ from sklearn.svm import SVR
 
 
 def omit_patient_video(test_size: float = 0.1, target: str = "arousal"):
-    df = read_table()
+    df = read_table("datasets/features_table.csv")
     df = df.reset_index(drop=True)
+    # df2 = read_table("datasets/features_table_imf.csv")
+    # df2 = df.drop(columns=["patient_index","video_index"])
+    # df2 = df2.reset_index(drop=True)
 
-    X = df.drop(columns=["patient_index", "video_index", "arousal", "valence"])
+    # df = pd.concat([df, df2], axis=1)
+    # df = df.reset_index(drop=True)
+
+    X = df.drop(columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"])
     y = df[target].astype(float)
 
     groups = df["patient_index"].astype(str) + "_" + df["video_index"].astype(str)

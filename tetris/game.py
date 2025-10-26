@@ -82,7 +82,7 @@ class Game:
                 self.lines_cleared += cleared
                 log_move(self.board.grid, self.current_piece, "clear", reward=cleared)
             self.spawn_piece()
-            exp.insert_data(
+            arousal, valence = exp.predict_n_insert(
                 user_id,
                 self.piece_count,
                 time.time() - start_time,  # In seconds
@@ -91,6 +91,8 @@ class Game:
                 fall_speed,
                 difficulty,
             )
+            return (arousal, valence)
+        return (None, None)
 
     def hard_drop(self):
         while self.move(0, 1):
@@ -99,4 +101,5 @@ class Game:
 
     def tick(self, user_id, start_time, fall_speed, difficulty):
         if not self.game_over:
-            self.drop(user_id, start_time, fall_speed, difficulty)
+           arousal, valence = self.drop(user_id, start_time, fall_speed, difficulty)
+           return (arousal, valence)

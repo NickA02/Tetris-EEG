@@ -1,6 +1,6 @@
 import os
 import asyncio
-from .EpocX.EpocXData import save_eeg_data
+from .EpocX.EpocXData import save_eeg_data, featurize_cur_sesh_psd, predict_flow
 from .EpocX import EpocXService as EpocX
 import pandas as pd
 import time
@@ -45,7 +45,7 @@ def init_epoc_record():
     return t
 
 
-def insert_data(
+def predict_n_insert(
     user_id: int,
     object_count: int,
     time_elapsed: float,
@@ -68,8 +68,25 @@ def insert_data(
         EpocX.sensor_contact_quality,
         EpocX.pow_data_batch,
     )
+    batch = featurize_cur_sesh_psd(
+        user_id,
+        session_id,
+        object_count,
+        time_elapsed,
+        arousal,
+        valence,
+        fall_speed,
+        difficulty_type,
+        EpocX.sensor_contact_quality,
+        EpocX.pow_data_batch,
+    )
+    arousal, valence = predict_flow(batch)
+    print(arousal, valence)
+    
 
     EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
+
+    return (arousal, valence)
 
 
 def save_curr_sesh(path_a: str, path_b: str) -> pd.DataFrame:
@@ -80,7 +97,7 @@ def save_curr_sesh(path_a: str, path_b: str) -> pd.DataFrame:
 
     # Concatenate row-wise
     combined = pd.concat([df_a, df_b[cols_a]], ignore_index=True)
-    
+
     combined.to_csv(path_a, index=False)
 
     return combined

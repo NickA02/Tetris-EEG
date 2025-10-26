@@ -1,10 +1,15 @@
 from datetime import datetime
 import pandas as pd
 import os
+import eegproc as eeg
+from dreamer_model.KNN_predictor import knn_arousal, knn_valence
+
+
+FS = 128  ## TODO: check if correct
 
 
 def save_eeg_data(
-    filename: str, 
+    filename: str,
     user_id: int,
     session_id: int,
     object_count: int,
@@ -14,7 +19,7 @@ def save_eeg_data(
     fall_speed: float,
     difficulty_type: str,
     sensor_contact_quality: bool,
-    df: pd.DataFrame
+    df: pd.DataFrame,
 ) -> int:
     if df is None or df.empty:
         return 0
@@ -53,3 +58,56 @@ def save_eeg_data(
             lineterminator="\n",
         )
 
+
+def featurize_cur_sesh_psd(
+    user_id: int,
+    session_id: int,
+    object_count: int,
+    time_elapsed: float,
+    arousal: int,
+    valence: int,
+    fall_speed: float,
+    difficulty_type: str,
+    sensor_contact_quality: bool,
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    # psd = eeg.psd_bandpowers(df, FS, bands=eeg.FREQUENCY_BANDS)
+    ### TODO: FULL FEATURES
+    n = len(df)
+    meta = pd.DataFrame(
+        {
+            "user_id": pd.Series([user_id] * n),
+            "session_id": pd.Series([session_id] * n),
+            "object_count": pd.Series([object_count] * n),
+            "time_elapsed": pd.Series([time_elapsed] * n),
+            "arousal": pd.Series([arousal] * n),
+            "valence": pd.Series([valence] * n),
+            "fall_speed": pd.Series([fall_speed] * n),
+            "difficulty_type": pd.Series([difficulty_type] * n),
+            "sensor_contact_quality": pd.Series([sensor_contact_quality] * n),
+        }
+    )
+    batch = pd.concat([meta, df], axis=1)
+
+    return batch
+
+
+def predict_flow(batch: pd.DataFrame) -> int:
+    batch = batch.drop(
+        columns=[
+            "user_id",
+            "session_id",
+            "object_count",
+            "time_elapsed",
+            "arousal",
+            "valence",
+            "fall_speed",
+            "difficulty_type",
+            "sensor_contact_quality",
+            "timestamp",
+        ]
+    )
+    print(batch)
+    arousal = knn_arousal.predict(batch) # possibly do this in a better way?
+    valence = knn_valence.predict(batch)
+    return (sum(arousal)/len(arousal), sum(valence)/len(valence))

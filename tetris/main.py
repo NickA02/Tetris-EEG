@@ -14,10 +14,11 @@ font = pygame.font.SysFont("Arial", 24)
 clock = pygame.time.Clock()
 
 difficulties = [
-    increase_difficulty_lines_cleared,
-    constant_difficulty,
-    increase_difficulty_adaptive,
-    increase_difficulty_blocks_placed,
+    # increase_difficulty_lines_cleared,
+    # constant_difficulty,
+    # increase_difficulty_adaptive,
+    # increase_difficulty_blocks_placed,
+    increase_difficulty_flow,
 ]
 
 difficulty = randint(0, len(difficulties) - 1)
@@ -112,11 +113,13 @@ def main():
 
                 move_timer = 0
 
-        fall_speed = increase_difficulty(game)
 
         if fall_time > fall_speed and not game.game_over:
-            game.tick(user_id, start_time, fall_speed, increase_difficulty.__name__)
+            arousal, valence = game.tick(user_id, start_time, fall_speed, increase_difficulty.__name__)
             fall_time = 0
+
+        if increase_difficulty is increase_difficulty and arousal is not None and valence is not None:    
+            fall_speed = increase_difficulty(game, arousal, valence)
 
         screen.fill(COLORS["bg"])
         board_grid, color_grid = game.board.get_state()

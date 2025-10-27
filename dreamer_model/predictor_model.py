@@ -22,5 +22,5 @@ valence_target = df["valence"].astype(float)
 best_model = None
 best_mse = math.inf
 best_n = 1
-knn_arousal, X_test, y_test = train_knn(X, None, arousal_target, None, neighbors=21)
-knn_valence, X_test, y_test = train_knn(X, None, valence_target, None, neighbors=21)
+arousal_model, X_test, y_test = train_knn(X, None, arousal_target, None, neighbors=21)
+valence_model, X_test, y_test = train_knn(X, None, valence_target, None, neighbors=21)

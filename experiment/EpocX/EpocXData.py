@@ -2,7 +2,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import eegproc as eeg
-from dreamer_model.KNN_predictor import knn_arousal, knn_valence
+from dreamer_model.predictor_model import arousal_model, valence_model
 
 
 FS = 128  ## TODO: check if correct
@@ -108,6 +108,7 @@ def predict_flow(batch: pd.DataFrame) -> int:
         ]
     )
     print(batch)
-    arousal = knn_arousal.predict(batch) # possibly do this in a better way?
-    valence = knn_valence.predict(batch)
-    return (sum(arousal)/len(arousal), sum(valence)/len(valence))
+
+    arousal = arousal_model.predict(batch)
+    valence = valence_model.predict(batch)
+    return (sum(arousal)/len(arousal), sum(valence)/len(valence)) # do this in a better way?

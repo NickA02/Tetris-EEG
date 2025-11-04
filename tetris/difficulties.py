@@ -30,6 +30,7 @@ def increase_difficulty_blocks_placed(game: Game, arousal: int, valence: int, ma
 
 def increase_difficulty_flow(game: Game, arousal: int, valence: int, max_speed=100, min_speed=600):
     """Increase fall speed based on the predicted flow by EEG data."""
+    
     if arousal > 3:
         if valence > 3:
             return fall_speed # don't change game speed

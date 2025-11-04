@@ -1,33 +1,98 @@
 import pandas as pd
 from .utils import read_table
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
+def random_train_test_split(
+    test_size: float = 0.1,
+    target: str = "arousal",
+    shuffle_random_state: int | None = None,
+):
+    df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
+    df_imf = read_table("datasets/features_table_imf.csv").reset_index(drop=True)
 
-def omit_patient_video(test_size: float = 0.1, target: str = "arousal"):
-    df = read_table("datasets/features_table.csv")
-    df = df.reset_index(drop=True)
-    # df2 = read_table("datasets/features_table_imf.csv")
-    # df2 = df.drop(columns=["patient_index","video_index"])
-    # df2 = df2.reset_index(drop=True)
+    df_imf_no_meta = df_imf.drop(
+        columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"],
+        errors="ignore",
+    )
 
-    # df = pd.concat([df, df2], axis=1)
-    # df = df.reset_index(drop=True)
+    df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
 
-    X = df.drop(columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"])
+    df = pd.concat([df_main, df_imf_no_meta], axis=1).reset_index(drop=True)
+
+    if target not in df.columns:
+        raise KeyError(f"Target '{target}' not found in dataframe columns.")
+
     y = df[target].astype(float)
 
-    groups = df["patient_index"].astype(str) + "_" + df["video_index"].astype(str)
+    blacklist = {
+        "patient_index",
+        "video_index",
+        "arousal",
+        "valence",
+        "Unnamed: 0",
+        target,
+    }
 
-    gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
-    train_idx, test_idx = next(gss.split(X, y, groups=groups))
+    X = df.drop(columns=[c for c in blacklist if c in df.columns], errors="ignore")
 
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=test_size,
+        shuffle=True,
+        random_state=shuffle_random_state,
+        stratify=None,
+    )
+
+    X_train = X_train.reset_index(drop=True)
+    X_test = X_test.reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
+    y_test = y_test.reset_index(drop=True)
 
     return X_train, X_test, y_train, y_test
+
+
+def omit_patient_video(
+    test_size: float = 0.1,
+    target: str = "arousal",
+):
+    df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
+    # df_imf = read_table("datasets/features_table_imf.csv").reset_index(drop=True)
+    # df_imf_no_meta = df_imf.drop(
+    #     columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"],
+    #     errors="ignore",
+    # )
+    df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
+
+    # df = pd.concat([df_main, df_imf_no_meta], axis=1).reset_index(drop=True)
+
+    X = df_main.drop(
+        columns=["patient_index", "video_index", "arousal", "valence"],
+        errors="ignore",
+    )
+
+    y = df_main[target].astype(float)
+
+    groups = df_main["patient_index"].astype(str) + "_" + df_main["video_index"].astype(str)
+
+    gss = GroupShuffleSplit(
+        n_splits=1,
+        test_size=test_size,
+        # random_state=42,
+    )
+    train_idx, test_idx = next(gss.split(X, y, groups=groups))
+
+    X_train = X.iloc[train_idx].reset_index(drop=True)
+    X_test = X.iloc[test_idx].reset_index(drop=True)
+    y_train = y.iloc[train_idx].reset_index(drop=True)
+    y_test = y.iloc[test_idx].reset_index(drop=True)
+
+    return X_train, X_test, y_train, y_test
+
+    
 
 
 def train_random_forest(
@@ -56,7 +121,7 @@ def train_knn(
     weights: str = "distance",
     n_jobs: int = -1,
 ):
-    knn = KNeighborsRegressor(n_neighbors=neighbors, weights=weights, n_jobs=n_jobs)
+    knn = KNeighborsRegressor(n_neighbors=neighbors, weights=weights, n_jobs=n_jobs, p=1)
     knn.fit(X_train, y_train)
 
     return knn, X_test, y_test

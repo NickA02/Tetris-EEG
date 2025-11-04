@@ -23,30 +23,14 @@ def generate_all_subsets(
     sensor_families: Optional[Iterable[str]] = None,
     feature_tokens: Optional[Iterable[str]] = None,
     freq_tokens: Optional[Iterable[str]] = None,
+    min_size: int = 6,
 ) -> List[List[str]]:
     if sensor_families is None:
-        sensor_families = ["AF", "F", "FC", "C", "CP", "P", "PO", "O", "T", "FT", "TP"]
+        sensor_families = []
     if feature_tokens is None:
-        feature_tokens = [
-            "imfentropy",
-            "imfenergy",
-            "wenergy",
-            "wentropy",
-            "mobility",
-            "activity",
-            "complexity",
-            "psd",
-            "entropy",
-        ]
+        feature_tokens = ["entropy", "", "da", "ra"]
     if freq_tokens is None:
-        freq_tokens = [
-            "betaH",
-            "betaL",
-            "theta",
-            "alpha",
-            # "delta",
-            # "gamma",
-        ]
+        freq_tokens = ["theta", "beta", "alpha", "delta", "gamma"]
 
     sensor_families = list(sensor_families)
     feature_tokens_sorted = sorted(set(feature_tokens), key=len, reverse=True)
@@ -55,13 +39,14 @@ def generate_all_subsets(
     leading_chan_re = re.compile(r"^(?P<prefix>[A-Za-z]+)[0-9A-Za-z]*", re.ASCII)
 
     def infer_sensor_family(col: str) -> Optional[str]:
+        # Try channel-like prefix first (e.g., AF3 -> AF)
         m = leading_chan_re.match(col)
         if m:
             prefix = m.group("prefix").upper()
             for fam in sorted(sensor_families, key=len, reverse=True):
                 if prefix.startswith(fam.upper()):
                     return fam
-
+        # Fallback: substring search
         up = col.upper()
         for fam in sorted(sensor_families, key=len, reverse=True):
             if fam.upper() in up:
@@ -84,32 +69,28 @@ def generate_all_subsets(
 
     parsed: Dict[str, Tuple[Optional[str], str, Optional[str]]] = {}
     for c in columns:
-        fam = infer_sensor_family(c)
-        feat = infer_feature(c)
-        freq = infer_freq(c)
-        parsed[c] = (fam, feat, freq)
+        parsed[c] = (infer_sensor_family(c), infer_feature(c), infer_freq(c))
 
     present_fams = sorted({fam for fam, _, _ in parsed.values() if fam is not None})
     present_feats = sorted({feat for _, feat, _ in parsed.values() if feat is not None})
     present_freqs = sorted({fr for _, _, fr in parsed.values() if fr is not None})
 
-    def powerset_nonempty(items: List[str]) -> List[Tuple[str, ...]]:
+    def powerset_with_empty(items: List[str]):
         s = list(items)
-        return list(
-            chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
-        )
+        return chain.from_iterable(combinations(s, r) for r in range(0, len(s) + 1))
 
-    fam_subsets = powerset_nonempty(present_fams) if present_fams else [()]
-    feat_subsets = powerset_nonempty(present_feats) if present_feats else [()]
-    freq_subsets = powerset_nonempty(present_freqs) if present_freqs else [()]
+    fam_subsets = list(powerset_with_empty(present_fams))
+    feat_subsets = list(powerset_with_empty(present_feats))
+    freq_subsets = list(powerset_with_empty(present_freqs))
 
-    all_subsets: List[List[str]] = []
     original_order = list(columns)
+    all_subsets: List[List[str]] = []
+    seen: set = set()
 
     for fam_sel, feat_sel, freq_sel in product(fam_subsets, feat_subsets, freq_subsets):
-        fam_set = set(fam_sel) if fam_sel else None
-        feat_set = set(feat_sel) if feat_sel else None
-        freq_set = set(freq_sel) if freq_sel else None
+        fam_set = set(fam_sel) if len(fam_sel) else None
+        feat_set = set(feat_sel) if len(feat_sel) else None
+        freq_set = set(freq_sel) if len(freq_sel) else None
 
         selected = []
         for c in original_order:
@@ -122,32 +103,67 @@ def generate_all_subsets(
                 continue
             selected.append(c)
 
-        if selected:
-            all_subsets.append(selected)
+        if len(selected) >= min_size:
+            key = tuple(selected)
+            if key not in seen:
+                seen.add(key)
+                all_subsets.append(selected)
 
     return all_subsets
 
 
-if __name__ == "__main__":
-    cols = [
-        "AF3_gamma_wenergy",
-        "AF3_betaH_wenergy",
-        "AF3_alpha",
-        "F7_theta_imfentropy",
-        "F7_beta",
-        "O1_betaL_wenergy",
-        "TP7_theta",
-    ]
-    subsets = generate_all_subsets(cols)
+import numpy as np
+import pandas as pd
 
-    seen = set()
-    unique = []
-    for s in subsets:
-        key = tuple(s)        # order-preserving key
-        if key not in seen:
-            seen.add(key)
-            unique.append(s)
+# Homologous left–right pairs for Emotiv/DREAMER (14ch)
+HOMOLOGOUS_PAIRS = [
+    ("AF3", "AF4"),
+    ("F3", "F4"),
+    ("F7", "F8"),
+    ("FC5", "FC6"),
+    ("T7", "T8"),
+    ("P7", "P8"),
+    ("O1", "O2"),
+]
 
 
-    print(f"Generated {len(unique)} unique")
-    print(unique)
+AS_BANDS = {"delta", "theta", "alpha", "beta", "gamma"}
+def compute_asymmetry_from_psd(
+    psd: pd.DataFrame,
+    pairs: list[tuple[str, str]] = HOMOLOGOUS_PAIRS,
+    eps: float = 1e-12,
+    add_log: bool = True,
+    prefix_da: str = "da",
+    prefix_ra: str = "ra",
+) -> pd.DataFrame:
+    bands_present = set()
+    for col in psd.columns:
+        if "_" in col:
+            ch, band = col.rsplit("_", 1)
+            if band in AS_BANDS:
+                bands_present.add(band)
+
+    out_cols = {}
+
+    for L, R in pairs:
+        for band in bands_present:
+            cL = f"{L}_{band}"
+            cR = f"{R}_{band}"
+            if cL not in psd.columns or cR not in psd.columns:
+                continue 
+
+            PL = psd[cL].astype(float)
+            PR = psd[cR].astype(float)
+
+            if add_log:
+                da = np.log(PR + eps) - np.log(PL + eps)
+            else:
+                da = (PR + eps) - (PL + eps)
+
+
+            ra = (PR - PL) / (PR + PL + eps)
+
+            out_cols[f"{R}_{L}_{band}_{prefix_da}"] = da
+            out_cols[f"{R}_{L}_{band}_{prefix_ra}"] = ra
+
+    return pd.DataFrame(out_cols, index=psd.index)

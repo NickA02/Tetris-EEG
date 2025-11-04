@@ -107,8 +107,7 @@ def predict_flow(batch: pd.DataFrame) -> int:
             "timestamp",
         ]
     )
-    print(batch)
 
     arousal = arousal_model.predict(batch)
     valence = valence_model.predict(batch)
-    return (sum(arousal)/len(arousal), sum(valence)/len(valence)) # do this in a better way?
+    return sum(arousal)/len(arousal), sum(valence)/len(valence)

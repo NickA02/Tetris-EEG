@@ -71,9 +71,8 @@ def featurize_cur_sesh_psd(
     sensor_contact_quality: bool,
     df: pd.DataFrame,
 ) -> pd.DataFrame:
-    # psd = eeg.psd_bandpowers(df, FS, bands=eeg.FREQUENCY_BANDS)
-    ### TODO: FULL FEATURES
     n = len(df)
+    shannons = eeg.shannons_entropy(df)
     meta = pd.DataFrame(
         {
             "user_id": pd.Series([user_id] * n),
@@ -87,7 +86,7 @@ def featurize_cur_sesh_psd(
             "sensor_contact_quality": pd.Series([sensor_contact_quality] * n),
         }
     )
-    batch = pd.concat([meta, df], axis=1)
+    batch = pd.concat([meta, df, shannons], axis=1)
 
     return batch
 

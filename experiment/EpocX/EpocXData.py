@@ -2,10 +2,10 @@ from datetime import datetime
 import pandas as pd
 import os
 import eegproc as eeg
-from dreamer_model.predictor_model import arousal_model, valence_model
+from dreamer_models.predictor_model import arousal_model, valence_model
 
 
-FS = 128  ## TODO: check if correct
+FS = 128 
 
 
 def save_eeg_data(

@@ -11,16 +11,10 @@ def random_train_test_split(
     shuffle_random_state: int | None = None,
 ):
     df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
-    df_imf = read_table("datasets/features_table_imf.csv").reset_index(drop=True)
 
-    df_imf_no_meta = df_imf.drop(
-        columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"],
-        errors="ignore",
-    )
+    df = df_main.drop(columns=["Unnamed: 0"], errors="ignore").reset_index(drop=True)
 
-    df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
-
-    df = pd.concat([df_main, df_imf_no_meta], axis=1).reset_index(drop=True)
+    # df = pd.concat([df_main, df_imf_no_meta], axis=1).reset_index(drop=True)
 
     if target not in df.columns:
         raise KeyError(f"Target '{target}' not found in dataframe columns.")

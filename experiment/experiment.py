@@ -68,7 +68,7 @@ def predict_n_insert(
         EpocX.sensor_contact_quality,
         EpocX.pow_data_batch,
     )
-    batch = featurize_cur_sesh_psd(
+    featurized_batch = featurize_cur_sesh_psd(
         user_id,
         session_id,
         object_count,
@@ -80,10 +80,9 @@ def predict_n_insert(
         EpocX.sensor_contact_quality,
         EpocX.pow_data_batch,
     )
-    arousal, valence = predict_flow(batch)
+    arousal, valence = predict_flow(featurized_batch)
     print(arousal, valence)
     
-
     EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
 
     return (arousal, valence)

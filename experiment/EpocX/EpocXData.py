@@ -2,6 +2,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import eegproc as eeg
+from dreamer_models.ML.utils import compute_asymmetry_from_psd
 from dreamer_models.predictor_model import arousal_model, valence_model
 
 
@@ -73,6 +74,8 @@ def featurize_cur_sesh_psd(
 ) -> pd.DataFrame:
     n = len(df)
     shannons = eeg.shannons_entropy(df)
+    asymm = compute_asymmetry_from_psd(df)
+
     meta = pd.DataFrame(
         {
             "user_id": pd.Series([user_id] * n),
@@ -86,13 +89,13 @@ def featurize_cur_sesh_psd(
             "sensor_contact_quality": pd.Series([sensor_contact_quality] * n),
         }
     )
-    batch = pd.concat([meta, df, shannons], axis=1)
+    batch = pd.concat([meta, df, shannons, asymm], axis=1)
 
     return batch
 
 
-def predict_flow(batch: pd.DataFrame) -> int:
-    batch = batch.drop(
+def predict_flow(featurized_batch: pd.DataFrame) -> int:
+    batch = featurized_batch.drop(
         columns=[
             "user_id",
             "session_id",
@@ -106,6 +109,7 @@ def predict_flow(batch: pd.DataFrame) -> int:
             "timestamp",
         ]
     )
+
 
     arousal = arousal_model.predict(batch)
     valence = valence_model.predict(batch)

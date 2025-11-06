@@ -54,6 +54,7 @@ def predict_n_insert(
     fall_speed: float,
     difficulty_type: str,
 ):
+    check_tick_time = time.time() 
     session_id = get_global_session_id()
     save_eeg_data(
         "dreamer_model/datasets/curr_sesh.csv",
@@ -84,6 +85,7 @@ def predict_n_insert(
     print(arousal, valence)
     
     EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
+    print("Prediction time:", time.time() - check_tick_time)
 
     return (arousal, valence)
 

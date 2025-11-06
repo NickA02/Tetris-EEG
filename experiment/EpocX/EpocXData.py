@@ -109,6 +109,8 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
             "timestamp",
         ]
     )
+    batch.reset_index(drop=True)
+    batch = batch.sort_index(axis=1)
 
 
     arousal = arousal_model.predict(batch)

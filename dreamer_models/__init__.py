@@ -12,11 +12,7 @@ __all__ = []
 
 # Iterate over modules in this package
 for finder, module_name, ispkg in pkgutil.iter_modules(__path__, __name__ + "."):
-    try:
-        module = import_module(module_name)
-    except Exception:
-        # skip modules that fail to import
-        continue
+    module = import_module(module_name)
 
     # Export public classes and functions defined in the module
     for name, obj in inspect.getmembers(

@@ -1,6 +1,10 @@
 from __future__ import annotations
-from typing import Iterable, List, Dict, Tuple, Optional
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import Optional, Sequence, Tuple, Union
+from typing import Iterable, List, Dict
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from itertools import chain, combinations, product
 import re
@@ -112,8 +116,13 @@ def generate_all_subsets(
     return all_subsets
 
 
-import numpy as np
-import pandas as pd
+def important_features_list(
+    filename: str = "datasets/USE_feature_importance/dreamer_feature_importance_arousal.csv",
+):
+    df = pd.read_csv(filename)
+
+    return df["feature"].to_list()
+
 
 # Homologous left–right pairs for Emotiv/DREAMER (14ch)
 HOMOLOGOUS_PAIRS = [
@@ -128,6 +137,8 @@ HOMOLOGOUS_PAIRS = [
 
 
 AS_BANDS = {"delta", "theta", "alpha", "beta", "gamma"}
+
+
 def compute_asymmetry_from_psd(
     psd: pd.DataFrame,
     pairs: list[tuple[str, str]] = HOMOLOGOUS_PAIRS,
@@ -150,7 +161,7 @@ def compute_asymmetry_from_psd(
             cL = f"{L}_{band}"
             cR = f"{R}_{band}"
             if cL not in psd.columns or cR not in psd.columns:
-                continue 
+                continue
 
             PL = psd[cL].astype(float)
             PR = psd[cR].astype(float)
@@ -160,10 +171,45 @@ def compute_asymmetry_from_psd(
             else:
                 da = (PR + eps) - (PL + eps)
 
-
             ra = (PR - PL) / (PR + PL + eps)
 
             out_cols[f"{R}_{L}_{band}_{prefix_da}"] = da
             out_cols[f"{R}_{L}_{band}_{prefix_ra}"] = ra
 
     return pd.DataFrame(out_cols, index=psd.index)
+
+
+def plot_regressor_accuracy(y_true, y_pred, size_increment=0.5, title=None):
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+
+    size: dict[tuple, int] = {}
+    for i in range(len(y_true)):
+        if (y_pred[i], y_true[i]) in size:
+            size[(y_pred[i], y_true[i])] += size_increment
+        else:
+            size[(y_pred[i], y_true[i])] = size_increment
+
+    s = []
+    for i in range(len(y_true)):
+        s.append(size[(y_pred[i], y_true[i])])
+
+
+    ax.scatter(y_true, y_pred, s=s, alpha=0.7, edgecolors="none")
+    ax.plot(
+        [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], c="blue", linestyle="--", linewidth=2
+    )
+
+    ax.set_aspect("equal", "box")
+    ax.set_xlabel("y_true")
+    ax.set_ylabel("y_pred")
+    if title:
+        ax.set_title(title)
+
+    return ax
+
+
+if __name__ == "__main__":
+    important_features_list(
+        "dreamer_models/datasets/USE_feature_importance/dreamer_feature_importance_arousal.csv"
+    )

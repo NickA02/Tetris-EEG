@@ -23,4 +23,20 @@ COLORS = {
     "grid": (50, 50, 50),
     "border": (200, 200, 200),
     "text": (255, 255, 255),
+    "garbage": (120, 120, 120),
 }
+
+# Affect integration
+AFFECT_HOST = "127.0.0.1"
+AFFECT_PORT = 5555
+AFFECT_VALUE_MAX = 5.0  # adjust to 9.0 when feeding raw DEAP ratings (1-9 scale)
+
+# Difficulty dimension toggles
+ENABLE_FALL_SPEED_ADJUST = True
+ENABLE_GARBAGE = False
+ENABLE_PIECE_BIAS = False
+ENABLE_HOLD_CONTROL = True
+ENABLE_PREVIEW_CONTROL = False
+
+# Overlay display
+SHOW_DIFFICULTY_OVERLAY = True

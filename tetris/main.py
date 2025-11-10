@@ -1,26 +1,45 @@
 # main.py
 
 from random import randint
+from pathlib import Path
+
 import pygame
+
 from settings import *
-from difficulties import *
+from difficulties import (
+    increase_difficulty_lines_cleared,
+    constant_difficulty,
+    increase_difficulty_adaptive,
+    increase_difficulty_blocks_placed,
+)
 from game import Game
-pygame.init()
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("Tetris (Modular)")
+from affect_client import AffectClient
+from difficulty_adapter import (
+    DifficultyAdapter,
+    DifficultyConfig,
+    FallSpeedConfig,
+    GarbageConfig,
+    PieceBiasConfig,
+    HoldConfig,
+    PreviewConfig,
+)
 
-font = pygame.font.SysFont("Arial", 24)
-clock = pygame.time.Clock()
 
-difficulties = [increase_difficulty_lines_cleared,
-                constant_difficulty,
-                increase_difficulty_adaptive,
-                increase_difficulty_blocks_placed]
+def build_adapter() -> DifficultyAdapter:
+    config = DifficultyConfig(
+        fall_speed=FallSpeedConfig(enabled=ENABLE_FALL_SPEED_ADJUST),
+        garbage=GarbageConfig(
+            enabled=ENABLE_GARBAGE,
+            threshold=0.25,
+            interval_seconds=12.0,
+        ),
+        piece_bias=PieceBiasConfig(enabled=ENABLE_PIECE_BIAS),
+        hold=HoldConfig(enabled=ENABLE_HOLD_CONTROL),
+        preview=PreviewConfig(enabled=ENABLE_PREVIEW_CONTROL),
+        scale_max=AFFECT_VALUE_MAX,
+    )
+    return DifficultyAdapter(config=config)
 
-difficulty = randint(0, len(difficulties)-1)
-increase_difficulty = difficulties[difficulty]
-
-game = Game(difficulty_level=difficulty)
 
 def draw_board(screen, board, colors):
     for y in range(GRID_HEIGHT):
@@ -43,14 +62,41 @@ def draw_mini_piece(screen, piece, pos_x, pos_y):
     for dy, row in enumerate(shape):
         for dx, cell in enumerate(row):
             if cell:
-                rect = pygame.Rect(pos_x + dx*BLOCK_SIZE//2, pos_y + dy*BLOCK_SIZE//2, BLOCK_SIZE//2, BLOCK_SIZE//2)
+                rect = pygame.Rect(
+                    pos_x + dx * BLOCK_SIZE // 2,
+                    pos_y + dy * BLOCK_SIZE // 2,
+                    BLOCK_SIZE // 2,
+                    BLOCK_SIZE // 2,
+                )
                 pygame.draw.rect(screen, COLORS[piece.type], rect)
                 pygame.draw.rect(screen, COLORS["border"], rect, 2)
 
 def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    pygame.display.set_caption("Tetris (Modular)")
+
+    font = pygame.font.SysFont("Arial", 24)
+    clock = pygame.time.Clock()
+
+    difficulties = [
+        increase_difficulty_lines_cleared,
+        constant_difficulty,
+        increase_difficulty_adaptive,
+        increase_difficulty_blocks_placed,
+    ]
+
+    difficulty = randint(0, len(difficulties)-1)
+    base_difficulty = difficulties[difficulty]
+
+    adapter = build_adapter()
+    logs_dir = Path(__file__).resolve().parent / "logs"
+    game = Game(difficulty_level=difficulty, difficulty_adapter=adapter, log_dir=str(logs_dir))
+
+    affect_client = AffectClient(host=AFFECT_HOST, port=AFFECT_PORT)
+    affect_client.start()
+
     fall_time = 0
-    fall_speed = 600  # ms
-    min_fall_speed = 50  # ms
     running = True
     move_delay = 80  # ms between moves when holding
     move_timer = 0
@@ -62,15 +108,17 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and not game.game_over:
-                if event.key == pygame.K_UP:
-                    game.rotate()
-                elif event.key == pygame.K_SPACE:
-                    game.hard_drop()
-                elif event.key == pygame.K_c and not hold_key_pressed:
-                    game.hold()
-                    hold_key_pressed = True
-            #Rotate does not work if held down
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_o:
+                    game.toggle_overlay()
+                if not game.game_over:
+                    if event.key == pygame.K_UP:
+                        game.rotate()
+                    elif event.key == pygame.K_SPACE:
+                        game.hard_drop()
+                    elif event.key == pygame.K_c and not hold_key_pressed:
+                        game.hold()
+                        hold_key_pressed = True
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_c:
                     hold_key_pressed = False
@@ -88,12 +136,21 @@ def main():
                     game.drop()
                 move_timer = 0
 
+        affect_payload = affect_client.get_latest()
+        if affect_payload:
+            game.set_affect_payload(affect_payload)
 
-        fall_speed = increase_difficulty(game)
+        base_fall_speed = base_difficulty(game)
+        target_fall_speed = game.difficulty_state.fall_speed_ms
+        if not ENABLE_FALL_SPEED_ADJUST or target_fall_speed is None:
+            effective_fall_speed = base_fall_speed
+        else:
+            effective_fall_speed = target_fall_speed
 
-        if fall_time > fall_speed and not game.game_over:
+        if fall_time > effective_fall_speed and not game.game_over:
             game.tick()
             fall_time = 0
+            game.log_state()
 
         screen.fill(COLORS["bg"])
         board_grid, color_grid = game.board.get_state()
@@ -101,12 +158,20 @@ def main():
         # Draw current piece
         if not game.game_over:
             draw_piece(screen, game.current_piece)
-        # Draw next piece preview
+        # Draw next piece preview(s)
         next_label = font.render("Next", True, COLORS["text"])
         screen.blit(next_label, (GRID_WIDTH*BLOCK_SIZE + 30, 30))
-        draw_mini_piece(screen, game.next_piece, GRID_WIDTH*BLOCK_SIZE + 30, 60)
+        preview_pieces = game.peek_next_pieces(game.difficulty_state.preview_depth)
+        for idx, piece in enumerate(preview_pieces):
+            draw_mini_piece(
+                screen,
+                piece,
+                GRID_WIDTH * BLOCK_SIZE + 30,
+                60 + idx * (BLOCK_SIZE + 20),
+            )
         # Draw hold piece preview
-        hold_label = font.render("Hold (C)", True, COLORS["text"])
+        hold_text = "Hold (C)" if game.difficulty_state.hold_allowed else "Hold (disabled)"
+        hold_label = font.render(hold_text, True, COLORS["text"])
         screen.blit(hold_label, (GRID_WIDTH*BLOCK_SIZE + 30, 140))
         if game.hold_piece:
             draw_mini_piece(screen, game.hold_piece, GRID_WIDTH*BLOCK_SIZE + 30, 170)
@@ -119,9 +184,25 @@ def main():
         if game.game_over:
             over_surface = font.render("GAME OVER", True, (255, 0, 0))
             screen.blit(over_surface, (WINDOW_WIDTH//2 - 80, WINDOW_HEIGHT//2))
+
+        if game.overlay_enabled:
+            overlay_lines = [
+                f"Valence: {game.difficulty_state.valence:.2f}" if game.difficulty_state.valence is not None else "Valence: n/a",
+                f"Arousal: {game.difficulty_state.arousal:.2f}" if game.difficulty_state.arousal is not None else "Arousal: n/a",
+                f"Fall Speed: {effective_fall_speed:.0f} ms",
+                f"Garbage: {'ON' if game.difficulty_state.garbage_interval else 'OFF'}",
+                f"Piece Bias: {game.difficulty_state.piece_bias_mode}",
+                f"Hold Allowed: {'YES' if game.difficulty_state.hold_allowed else 'NO'}",
+            ]
+            for idx, text in enumerate(overlay_lines):
+                surface = font.render(text, True, COLORS["text"])
+                screen.blit(surface, (GRID_WIDTH*BLOCK_SIZE + 30, 320 + idx * 24))
         pygame.display.flip()
 
     pygame.quit()
+    affect_client.stop()
+    if game.log_file:
+        game.log_file.close()
 
 if __name__ == "__main__":
     main()

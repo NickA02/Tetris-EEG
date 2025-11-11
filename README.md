@@ -31,8 +31,7 @@ Current tetris implementation only tested with Python 3.13.7
 To play the game, set the current working directory to Tetris-EEG/tetris, then run main.py. Make sure that an Emotiv EPOC X headset is close by and powered on.
 
 ```zsh
-cd tetris
-python main.py
+python -m tetris
 ```
 
 ### Controls

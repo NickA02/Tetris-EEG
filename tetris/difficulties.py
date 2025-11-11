@@ -1,7 +1,6 @@
 
 from .game import Game
 from .flow_computation import delta_s_vec
-import numpy as np
 
 MAX_SPEED_CHANGE = 100
 

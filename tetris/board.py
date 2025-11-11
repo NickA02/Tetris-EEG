@@ -1,7 +1,7 @@
 # board.py
 
 import numpy as np
-from settings import GRID_WIDTH, GRID_HEIGHT
+from .settings import GRID_WIDTH, GRID_HEIGHT
 
 class Board:
     def count_blocks(self):

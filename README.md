@@ -1,6 +1,24 @@
-# Tetris-EEG (A WIP Name)
+# Tetris-EEG
+
+This repository contains code to run an adaptation of Tetris that dynamically changes the game speed based on Machine Learning predictions of the user's current Arousal and Valence every 4 seconds. This project was originally built to run an experiment called EEGoFeedback: Dynamic Flow Maintenance through Real-time EEG Emotion Prediction.
+
+Repo Structure:
+```
+.
+├── dreamer_model
+|   ├── datasets  # all generated csv go here
+|   ├── ML  # contains models, utils, and training split functions
+|   ├── features.ipynb  # generates features tables from DREAMER
+|   ├── predictor_model.ipynb   # train model to predict in-game
+|   └── run_models.ipynb    # notebook to compile all models
+├── experiment
+|   ├── EpocX   # contains code to get and manipulate data from EEG
+|   ├── experiment.py   # functions for syncing EEG data with game
+└── tetris
+    └── main.py
+```
+
 ## Initial Setup
-Current tetris implementation only tested with Python 3.13.7
 
 Once you have set up your python environment, run
 ```zsh
@@ -8,12 +26,12 @@ pip install -r requirements.txt
 ```
 
 ## Playing the game/Data Collection
+Current tetris implementation only tested with Python 3.13.7
 
-To play the game, set the current working directory to Tetris-EEG/tetris, then run main.py
+To play the game, set the current working directory to Tetris-EEG/tetris, then run main.py. Make sure that an Emotiv EPOC X headset is close by and powered on.
 
 ```zsh
-cd tetris
-python main.py
+python -m tetris
 ```
 
 ### Controls

@@ -4,3 +4,5 @@ __pycache__/
 .env
 venv/
 dreamer_model/datasets
+datasets/
+auto_model/

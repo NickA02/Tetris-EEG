@@ -1,5 +1,5 @@
 # analytics.py
-from piece import Piece
+from .piece import Piece
 # This is a stub for online ML analytics integration.
 # You can extend these functions to send data to your analytics system,
 # or perform online learning, etc.

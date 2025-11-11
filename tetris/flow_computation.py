@@ -35,5 +35,6 @@ def delta_s_vec(valence, arousal, activation_constant=1, centerX=3.0, centerY=3.
     # A regularizing envelope that tapers off to 0 at the center and edges
     env = np.tanh(activation_constant * r) * (r / R_MAX)
 
-    #Flip sign to match desired direction
+    # Negate to ensure that positive delta_s corresponds to movement away from the flow angle (pi/4),
+    # so that the direction of adjustment matches the intended flow direction in the valence-arousal space.
     return -1 * env * s

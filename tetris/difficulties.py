@@ -1,5 +1,9 @@
 
 from .game import Game
+from .flow_computation import delta_s_vec
+import numpy as np
+
+MAX_SPEED_CHANGE = 100
 
 def increase_difficulty_lines_cleared(game: Game, arousal: int, valence: int, max_speed=100, min_speed=600):
     """Increase fall speed based on lines cleared."""
@@ -27,6 +31,15 @@ def increase_difficulty_blocks_placed(game: Game, arousal: int, valence: int, ma
     fall_speed = min_speed - piece_factor
     fall_speed = max(min(fall_speed, min_speed), max_speed)
     return fall_speed
+
+def increase_difficulty_minimize_emotion_distance(game: Game, arousal: int, valence: int, max_speed=50, min_speed=800):
+    """Increase fall speed based on the distance from target arousal and valence."""
+    
+    delta_s = delta_s_vec(valence, arousal)
+    # get current speed
+    return_speed = game.fall_speed - (delta_s * MAX_SPEED_CHANGE)
+    return max(min(return_speed, min_speed), max_speed)
+
 
 def increase_difficulty_flow(game: Game, arousal: int, valence: int, max_speed=100, min_speed=600):
     """Increase fall speed based on the predicted flow by EEG data."""

@@ -18,7 +18,8 @@ difficulties = [
     # constant_difficulty,
     # increase_difficulty_adaptive,
     # increase_difficulty_blocks_placed,
-    increase_difficulty_flow,
+    #increase_difficulty_flow,
+    increase_difficulty_minimize_emotion_distance
 ]
 
 difficulty = randint(0, len(difficulties) - 1)
@@ -118,8 +119,9 @@ def main():
             arousal, valence = game.tick(user_id, start_time, fall_speed, increase_difficulty.__name__)
             fall_time = 0
 
-        if increase_difficulty is increase_difficulty and arousal is not None and valence is not None:    
+        if increase_difficulty is increase_difficulty and arousal is not None and valence is not None:   
             fall_speed = increase_difficulty(game, arousal, valence)
+            game.fall_speed = fall_speed
 
         screen.fill(COLORS["bg"])
         board_grid, color_grid = game.board.get_state()

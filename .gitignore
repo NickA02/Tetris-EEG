@@ -6,3 +6,4 @@ datasets/
 
 venv/
 .env
+auto_model/

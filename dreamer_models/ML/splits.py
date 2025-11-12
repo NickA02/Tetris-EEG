@@ -46,17 +46,73 @@ def random_train_test_split(
     return X_train, X_test, y_train, y_test
 
 
-def omit_patient_video(  # PERFORMS LOO (Leave-N-trials-out for one patient)
+def omit_patient_video(  # Leave-N-trials-out for one patient, with optional manual holds
     target: str = "arousal",
     random_state: int | None = None,
     trials: int = 3,
+    exclude_users: list[int] | set[int] | None = None,
+    selected_user: int | None = None,
+    holdout_videos: (
+        list[int] | None
+    ) = None,
 ):
     if trials < 1:
         raise ValueError("`trials` must be >= 1.")
 
     df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
     df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
-    df_main = relabel_target_from_video_map(df_main)
+    df_main = mean_labels(df_main)
+
+
+    if exclude_users:
+        df_main = df_main[~df_main["patient_index"].isin(exclude_users)].reset_index(
+            drop=True
+        )
+    vids_per_patient = df_main.groupby("patient_index")["video_index"].nunique()
+    eligible_patients = vids_per_patient.index.to_numpy()
+    if eligible_patients.size == 0:
+        raise ValueError("No patients left after exclusions.")
+
+    rng = np.random.default_rng(random_state)
+
+    if selected_user is not None:
+        if selected_user not in vids_per_patient.index:
+            raise ValueError(
+                f"Selected user {selected_user} not present after exclusions."
+            )
+        chosen_patient = int(selected_user)
+    else:
+        if holdout_videos is None:
+            eligible_with_trials = vids_per_patient[
+                vids_per_patient >= trials
+            ].index.to_numpy()
+            if eligible_with_trials.size == 0:
+                raise ValueError(
+                    "No eligible patients with enough videos for the requested `trials`."
+                )
+            chosen_patient = int(rng.choice(eligible_with_trials))
+        else:
+            chosen_patient = int(rng.choice(eligible_patients))
+
+    patient_mask = df_main["patient_index"] == chosen_patient
+    patient_videos = pd.unique(df_main.loc[patient_mask, "video_index"])
+
+    if holdout_videos is not None:
+        held_videos = np.array(sorted(set(map(int, holdout_videos))), dtype=int)
+        missing = [v for v in held_videos if v not in set(patient_videos)]
+        if missing:
+            raise ValueError(
+                f"Holdout videos not found for user {chosen_patient}: {missing}"
+            )
+        trials = len(held_videos)
+    else:
+        if len(patient_videos) < trials:
+            raise ValueError(
+                f"User {chosen_patient} has only {len(patient_videos)} videos, but trials={trials}."
+            )
+        held_videos = rng.choice(patient_videos, size=trials, replace=False)
+
+    held_out_trials = [(chosen_patient, int(v)) for v in held_videos]
 
     X = df_main.drop(
         columns=["patient_index", "video_index", "arousal", "valence"], errors="ignore"
@@ -70,24 +126,15 @@ def omit_patient_video(  # PERFORMS LOO (Leave-N-trials-out for one patient)
     if not (len(X) == len(y) == len(trial_id)):
         raise ValueError("X, y, and trial_id must have the same number of rows.")
 
-    vids_per_patient = df_main.groupby("patient_index")["video_index"].nunique()
-    eligible_patients = vids_per_patient[vids_per_patient >= trials].index.to_numpy()
-
-    rng = np.random.default_rng(random_state)
-    chosen_patient = rng.choice(eligible_patients)
-    patient_videos = pd.unique(
-        df_main.loc[df_main["patient_index"] == chosen_patient, "video_index"]
-    )
-    held_videos = rng.choice(patient_videos, size=trials, replace=False)
-    held_out_trials = [(int(chosen_patient), int(v)) for v in held_videos]
-
     test_mask = trial_id.isin(set(held_out_trials)).to_numpy()
     test_idx = np.nonzero(test_mask)[0]
     train_idx = np.nonzero(~test_mask)[0]
 
     print(
-        f"Held-out patient: {int(chosen_patient)} | Held-out (patient, video) trials:",
+        f"Held-out patient: {chosen_patient} | Held-out (patient, video) trials:",
         sorted(held_out_trials, key=lambda t: (t[0], t[1])),
+        "| Excluded users:",
+        sorted(exclude_users) if exclude_users else [],
     )
 
     X_train = X.iloc[train_idx].reset_index(drop=True)
@@ -163,7 +210,9 @@ def single_user_split(
 
     print(selected_user, holdouts)
 
-    X = df.drop(columns=["patient_index", "video_index", "arousal", "valence"], errors="ignore")
+    X = df.drop(
+        columns=["patient_index", "video_index", "arousal", "valence"], errors="ignore"
+    )
     y = df[target]
 
     mask = df["patient_index"] == selected_user
@@ -176,4 +225,3 @@ def single_user_split(
     y_test = y.loc[trial_mask].reset_index(drop=True)
 
     return X_train, X_test, y_train, y_test
-

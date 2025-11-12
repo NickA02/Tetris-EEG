@@ -87,7 +87,6 @@ def mean_labels(
 
     out = df_main.copy()
     out[target] = mapped
-    print(len(out[target].unique()), out[target].unique())
 
     return out
 
@@ -109,7 +108,6 @@ def relabel_target_from_video_map(
         raise KeyError(f"No mapping for video_index values: {missing_vids}")
 
     out[target] = mapped.where(~mapped.isna(), out.get(target, out.get(target)))
-    print(len(out[target].unique()), out[target].unique())
 
     return out
 
@@ -199,5 +197,6 @@ def remove_outlier_videos(
 if __name__ == "__main__":
     df = read_table("datasets/features_table.csv").reset_index(drop=True)
     df = df.drop(columns=["Unnamed: 0"], errors="ignore")
+    print(build_video_rating_tables(df)["arousal"])
     remove_outlier_videos(df)
 

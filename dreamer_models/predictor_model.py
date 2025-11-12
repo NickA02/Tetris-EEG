@@ -1,5 +1,5 @@
 import math
-from .ML.model_training import train_knn
+from .ML.model_training import train_lstm
 from .ML.utils import read_table
 import re
 
@@ -19,9 +19,9 @@ valence_target = df["valence"].astype(float)
 best_model = None
 best_mse = math.inf
 best_n = 1
-arousal_model, X_test, y_test = train_knn(
-    X, None, arousal_target, None, neighbors=best_n
-)
-valence_model, X_test, y_test = train_knn(
-    X, None, valence_target, None, neighbors=best_n
-)
+# arousal_model, X_test, y_test = train_lstm(
+#     X, None, arousal_target, None
+# )
+# valence_model, X_test, y_test = train_lstm(
+#     X, None, valence_target, None
+# )

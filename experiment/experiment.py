@@ -57,7 +57,7 @@ def predict_n_insert(
     check_tick_time = time.time() 
     session_id = get_global_session_id()
     save_eeg_data(
-        "dreamer_model/datasets/curr_sesh.csv",
+        "dreamer_models/datasets/curr_sesh.csv",
         user_id,
         session_id,
         object_count,

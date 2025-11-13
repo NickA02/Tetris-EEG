@@ -16,9 +16,8 @@ clock = pygame.time.Clock()
 difficulties = [
     # increase_difficulty_lines_cleared,
     # constant_difficulty,
-    # increase_difficulty_adaptive,
+    increase_difficulty_adaptive,
     # increase_difficulty_blocks_placed,
-    #increase_difficulty_flow,
     increase_difficulty_minimize_emotion_distance
 ]
 
@@ -157,7 +156,7 @@ def main():
     while True:
         save_session_recordings = input("Do you want to save session recordings? [Y/N] ")
         if save_session_recordings.lower() == "y":
-            exp.save_curr_sesh("dreamer_model/datasets/EEGO.csv", "dreamer_model/datasets/curr_sesh.csv")
+            exp.save_curr_sesh("dreamer_models/datasets/EEGO.csv", "dreamer_models/datasets/curr_sesh.csv")
             break
         elif save_session_recordings.lower() == "n":
             sure = input("Are you sure?[Y/N] ")

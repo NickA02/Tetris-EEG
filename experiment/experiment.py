@@ -82,7 +82,10 @@ def predict_n_insert(
         EpocX.pow_data_batch,
     )
     arousal, valence = predict_flow(featurized_batch)
-    print(arousal, valence)
+    if arousal >= 0.5:
+        arousal = 4
+    else:
+        arousal = 2
     
     EpocX.pow_data_batch.drop(EpocX.pow_data_batch.index, inplace=True)
     print("Prediction time:", time.time() - check_tick_time)

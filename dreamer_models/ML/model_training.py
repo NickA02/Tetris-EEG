@@ -6,11 +6,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVR
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks, optimizers
+from tensorflow.keras.optimizers import Adam
 from .STSNet import STSNetModel
 
 from .labels import *
 from .splits import *
-
 
 
 def train_random_forest(
@@ -142,17 +142,95 @@ def train_lstm(
 
     cbs = [
         callbacks.EarlyStopping(
-            monitor="val_loss", patience=patience, restore_best_weights=True
+            monitor="loss", patience=patience, restore_best_weights=True
         ),
         callbacks.ReduceLROnPlateau(
-            monitor="val_loss", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6
+            monitor="loss", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6
         ),
     ]
 
     model.fit(
         X_train_arr,
         y_train_arr,
-        validation_split=0.15,
+        epochs=epochs,
+        batch_size=batch_size,
+        verbose=verbose,
+        callbacks=cbs,
+        shuffle=False,
+    )
+
+    return model, X_test_arr, y_test_arr
+
+
+def train_lstm_regressor(
+    X_train: pd.DataFrame | np.ndarray,
+    X_test: pd.DataFrame | np.ndarray,
+    y_train: pd.Series | pd.DataFrame | np.ndarray,
+    y_test: pd.Series | pd.DataFrame | np.ndarray,
+    *,
+    units: int = 64,
+    dropout: float = 0.2,
+    recurrent_dropout: float = 0.0,
+    lr: float = 1e-3,
+    epochs: int = 50,
+    batch_size: int = 64,
+    bidirectional: bool = True,
+    patience: int = 8,
+    verbose: int = 0,
+    random_seed: int = 42,
+):
+    if random_seed is not None:
+        tf.keras.utils.set_random_seed(random_seed)
+
+    X_train_arr = np.asarray(X_train).astype(np.float32, copy=False)
+    X_test_arr = np.asarray(X_test).astype(np.float32, copy=False)
+
+    y_train_arr = np.asarray(y_train, dtype=np.float32)
+    y_test_arr = np.asarray(y_test, dtype=np.float32)
+
+    if X_train_arr.ndim == 2:
+        X_train_arr = X_train_arr[:, None, :]
+    if X_test_arr.ndim == 2:
+        X_test_arr = X_test_arr[:, None, :]
+
+    timesteps = X_train_arr.shape[1]
+    n_features = X_train_arr.shape[2]
+
+    inp = layers.Input(shape=(timesteps, n_features))
+    lstm_block = layers.LSTM(
+        units,
+        dropout=dropout,
+        recurrent_dropout=recurrent_dropout,
+        return_sequences=False,
+    )
+    x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
+    x = layers.Dense(units // 2, activation="leaky_relu")(x)
+    x = layers.Dropout(dropout)(x)
+
+    out = layers.Dense(1, activation="linear")(x)
+
+    model = models.Model(inp, out)
+    model.compile(
+        optimizer=optimizers.Adam(learning_rate=lr),
+        loss="mse",
+        metrics=[
+            tf.keras.metrics.MeanAbsoluteError(name="mae"),
+            tf.keras.metrics.MeanSquaredError(name="mse"),
+        ],
+    )
+
+    cbs = [
+        callbacks.EarlyStopping(
+            monitor="loss", patience=patience, restore_best_weights=True
+        ),
+        callbacks.ReduceLROnPlateau(
+            monitor="loss", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6
+        ),
+    ]
+
+    model.fit(
+        X_train_arr,
+        y_train_arr,
         epochs=epochs,
         batch_size=batch_size,
         verbose=verbose,
@@ -164,37 +242,76 @@ def train_lstm(
 
 
 
-def STSNet(X_train, y_train, X_test, y_test, random_seed: int = 42):
+def STSNet(
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    *,
+    n_channels: int = 14,
+    random_seed: int | None = 42,
+    epochs: int = 50,
+    batch_size: int = 64,
+    verbose: int = 0,
+    learning_rate: float = 1e-4,
+):
+
     if random_seed is not None:
         tf.keras.utils.set_random_seed(random_seed)
-
     X_train_arr = np.asarray(X_train).astype(np.float32, copy=False)
     X_test_arr = np.asarray(X_test).astype(np.float32, copy=False)
     y_train_arr = np.asarray(y_train)
     y_test_arr = np.asarray(y_test)
 
     y_train_arr = np.array(
-        [1 if str(v).lower() == "high" else 0 for v in y_train_arr], dtype=np.float32
+        [1 if str(v).lower() == "high" else 0 for v in y_train_arr],
+        dtype=np.int32,
     )
     y_test_arr = np.array(
-        [1 if str(v).lower() == "high" else 0 for v in y_test_arr], dtype=np.float32
+        [1 if str(v).lower() == "high" else 0 for v in y_test_arr],
+        dtype=np.int32,
     )
 
-    if X_train_arr.ndim == 2:
-        X_train_arr = X_train_arr[:, None, :]
-    if X_test_arr.ndim == 2:
-        X_test_arr = X_test_arr[:, None, :]
+    if X_train_arr.ndim != 2:
+        raise ValueError(
+            f"Expected X_train to be 2D (N, features), got shape {X_train_arr.shape}"
+        )
 
-    model = STSNetModel(2, len(X_train), len(X_train.columns), kernLength=64)
+    total_features = X_train_arr.shape[1]
+    if total_features % n_channels != 0:
+        raise ValueError(
+            f"total_features={total_features} is not divisible by n_channels={n_channels}. "
+            "Check your feature ordering / channel count."
+        )
+
+    n_features = total_features // n_channels
+
+    X_train_arr = X_train_arr.reshape(-1, n_channels, n_features)
+    X_test_arr = X_test_arr.reshape(-1, n_channels, n_features)
+
+    X_train_arr = X_train_arr[..., np.newaxis]
+    X_test_arr = X_test_arr[..., np.newaxis]
+
+    model = STSNetModel(
+        n_classes=2,
+        n_channels=n_channels,
+        n_features=n_features,
+    )
+
+    opt = Adam(learning_rate=learning_rate)
     model.compile(
-        loss="binary_crossentropy",
+        optimizer=opt,
+        loss="sparse_categorical_crossentropy",
         metrics=["accuracy", tf.keras.metrics.AUC(name="auc")],
     )
+
     model.fit(
-        X_train,
-        y_train,
-        validation_split=0.15,
+        X_train_arr,
+        y_train_arr,
+        validation_data=(X_test_arr, y_test_arr),
+        epochs=epochs,
+        batch_size=batch_size,
+        verbose=verbose,
     )
 
     return model, X_test_arr, y_test_arr
-

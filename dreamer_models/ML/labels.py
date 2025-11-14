@@ -29,40 +29,49 @@ def hybrid_video_label_mean(
     target: str = "arousal",
     video_col: str = "video_index",
     patient_col: str = "patient_index",
-    w_video_mean: float = 0.5,  # weight for cross-patient video mean
-    w_basis: float = 0.5,  # weight for dictionary label
-):
-    per_pv = (
-        df_main.groupby([patient_col, video_col], dropna=False)[target]
-        .mean()
-        .reset_index()
-    )
+    w_video_mean: float = 0.5,  #
+    w_basis: float = 0.5,  
+    w_user: float = 0.5,  
+) -> pd.DataFrame:
+    """
+    For each row (user, video), build a hybrid label that is a weighted
+    average of:
+        - the mean rating for that video across all users,
+        - the BASIS_DICT label for that video,
+        - the user's own rating for that video.
 
+    Returns a copy of df_main with `target` replaced by the hybrid value.
+    """
+    
     video_means = (
-        per_pv.groupby(video_col, dropna=False)[target].mean().rename("video_mean")
+        df_main.groupby(video_col, dropna=False)[target].mean().rename("video_mean")
     )
 
-    # basis_series = pd.Series(
-    #     {
-    #         vid: lab[target] if isinstance(lab, dict) else lab
-    #         for vid, lab in BASIS_DICT.items()
-    #     },
-    #     name="basis_label",
-    #     dtype="float",
-    # )
+    
+    basis_series = pd.Series(
+        {
+            vid: lab[target] if isinstance(lab, dict) else lab
+            for vid, lab in BASIS_DICT.items()
+        },
+        name="basis_label",
+        dtype="float",
+    )
 
     present_videos = pd.Index(df_main[video_col].unique())
-    vm = video_means.reindex(present_videos)
-    # bs = basis_series.reindex(present_videos)
-    bs = df_main[target]
+    video_means = video_means.reindex(present_videos)
+    basis_series = basis_series.reindex(present_videos)
 
-    denom = w_video_mean + w_basis
-    combined = (w_video_mean * vm + w_basis * bs) / denom
+    vm = df_main[video_col].map(video_means)  
+    bs = df_main[video_col].map(basis_series)  
+    ur = df_main[target].astype(float)  
+
+    
+    denom = w_video_mean + w_basis + w_user
+    combined = (w_video_mean * vm + w_basis * bs + w_user * ur) / denom
     combined.name = f"{target}_hybrid_mean"
 
     out = df_main.copy()
-    out[target] = out[video_col].map(combined)
-    print(len(out[target].unique()), out[target].unique())
+    out[target] = combined
 
     return out
 
@@ -128,13 +137,12 @@ def build_video_rating_tables(
     for r in rating_cols:
         mat = (
             df.groupby([video_col, user_col])[r]
-              .agg(aggregator)
-              .unstack(user_col)
-              .sort_index(axis=0)        # sort videos
-              .sort_index(axis=1)        # sort users
+            .agg(aggregator)
+            .unstack(user_col)
+            .sort_index(axis=0)  # sort videos
+            .sort_index(axis=1)  # sort users
         )
         ratings[r] = mat
-
 
     return ratings
 
@@ -147,6 +155,7 @@ def find_z_outliers(
     outliers = {}
 
     for rating_name, df in rating_tables.items():
+
         def row_z(row: pd.Series) -> pd.Series:
             s = row.dropna()
             if s.size < min_count:
@@ -174,6 +183,7 @@ def find_z_outliers(
 
     return outliers
 
+
 def remove_outlier_videos(
     df: pd.DataFrame,
     target: str = "arousal",
@@ -193,10 +203,8 @@ def remove_outlier_videos(
     return filtered
 
 
-
 if __name__ == "__main__":
     df = read_table("datasets/features_table.csv").reset_index(drop=True)
     df = df.drop(columns=["Unnamed: 0"], errors="ignore")
     print(build_video_rating_tables(df)["arousal"])
     remove_outlier_videos(df)
-

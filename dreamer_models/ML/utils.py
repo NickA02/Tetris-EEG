@@ -252,7 +252,7 @@ def compute_asymmetry_from_psd(
     return pd.DataFrame(out_cols, index=psd.index)
 
 
-def plot_regressor_accuracy(y_true, y_pred, size_increment=0.5, title=None):
+def plot_regressor_accuracy(y_true, y_pred, size_increment=5, title=None):
 
     fig, ax = plt.subplots(figsize=(5, 5))
 

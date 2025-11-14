@@ -61,7 +61,7 @@ def omit_patient_video(  # Leave-N-trials-out for one patient, with optional man
 
     df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
     df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
-    df_main = mean_labels(df_main)
+    df_main = relabel_target_from_video_map(df_main)
 
 
     if exclude_users:
@@ -153,7 +153,7 @@ def omit_patient(  # PERFORMS LOSO (Leave-one--out)
     # df_main = hybrid_video_label_mean(df_main, target)
     # df_main = mean_labels(df_main, target)
     # df_main = relabel_target_from_video_map(df_main, target)
-    participants_to_drop = [0, 1, 2, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19]
+    participants_to_drop = [0, 1, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19]
     df_main = df_main[~df_main["patient_index"].isin(participants_to_drop)].reset_index(
         drop=True
     )

@@ -3,7 +3,8 @@ import pandas as pd
 import os
 import eegproc as eeg
 from dreamer_models.ML.utils import compute_asymmetry_from_psd
-from dreamer_models.predictor_model import arousal_model, valence_model
+from dreamer_models.predictor_model import arousal_model, valence_model, features
+import numpy as np
 
 
 FS = 128 
@@ -109,10 +110,26 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
             "timestamp",
         ]
     )
-    batch.reset_index(drop=True)
+
     batch = batch.sort_index(axis=1)
+    batch = batch.reset_index(drop=True)
 
+    batch = batch.reindex(columns=features)
 
-    arousal = arousal_model.predict(batch)
-    valence = valence_model.predict(batch)
-    return sum(arousal)/len(arousal), sum(valence)/len(valence)
+    # Convert to numpy
+    X = batch.to_numpy().astype("float32", copy=False)
+
+    print("Before reshape, X.shape =", X.shape)
+    if X.ndim == 2:
+        X = np.expand_dims(X, axis=1)
+
+    print("After reshape, X.shape  =", X.shape)
+    print("Model expects:", arousal_model.input_shape)
+
+    arousal = arousal_model.predict(X).ravel()
+    valence = valence_model.predict(X).ravel()
+
+    print("arousal preds:", float(arousal.mean())*5)
+    print("valence preds:", float(valence.mean())*5)
+
+    return float(arousal.mean()), float(valence.mean())

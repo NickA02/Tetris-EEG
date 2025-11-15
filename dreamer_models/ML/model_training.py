@@ -104,14 +104,17 @@ def train_lstm(
     X_train_arr = np.asarray(X_train).astype(np.float32, copy=False)
     X_test_arr = np.asarray(X_test).astype(np.float32, copy=False)
     y_train_arr = np.asarray(y_train)
-    y_test_arr = np.asarray(y_test)
 
     y_train_arr = np.array(
         [1 if str(v).lower() == "high" else 0 for v in y_train_arr], dtype=np.float32
     )
-    y_test_arr = np.array(
-        [1 if str(v).lower() == "high" else 0 for v in y_test_arr], dtype=np.float32
-    )
+    if y_test is not None:
+        y_test_arr = np.asarray(y_test)
+        y_test_arr = np.array(
+            [1 if str(v).lower() == "high" else 0 for v in y_test_arr], dtype=np.float32
+        )
+    else:
+        y_test_arr = None
 
     if X_train_arr.ndim == 2:
         X_train_arr = X_train_arr[:, None, :]
@@ -239,7 +242,6 @@ def train_lstm_regressor(
     )
 
     return model, X_test_arr, y_test_arr
-
 
 
 def STSNet(

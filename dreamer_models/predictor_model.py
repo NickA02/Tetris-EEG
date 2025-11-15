@@ -12,8 +12,9 @@ df = df.reset_index(drop=True)
 X = df.drop(
     columns=["patient_index", "video_index", "arousal", "valence", "Unnamed: 0"]
 )
-X = X.drop(columns=X.columns[X.columns.str.contains("delta", case=False, na=False)])
 X = X.sort_index(axis=1)
+
+# TODO: select subjects and training set
 
 arousal_target = df["arousal"].astype(float)
 valence_target = df["valence"].astype(float)
@@ -41,12 +42,13 @@ def balance(X, y, seed=5):
     return X.loc[keep].reset_index(drop=True), y.loc[keep].reset_index(drop=True)
 
 
-X, arousal_target = balance(X, arousal_target, seed=5)
-print("arousal_train counts:\n", arousal_target.value_counts(dropna=False))
-X, valence_target = balance(X, arousal_target, seed=5)
-print("arousal_train counts:\n", arousal_target.value_counts(dropna=False))
+# X, arousal_target = balance(X, arousal_target, seed=5)
+# print("arousal_train counts:\n", arousal_target.value_counts(dropna=False))
+# X, valence_target = balance(X, valence_target, seed=5)
+# print("arousal_train counts:\n", valence_target.value_counts(dropna=False))
 
-
+X = X.loc[:, features]
+print(X.shape)
 
 best_model = None
 best_mse = math.inf
@@ -55,10 +57,10 @@ arousal_model, X_test_eval, y_test_eval = train_lstm(
     None,
     arousal_target,
     None,
-    lr=0.001,
+    lr=0.0001,
     epochs=10,
-    units=1024,
-    batch_size=1024,
+    units=512,
+    batch_size=256,
     bidirectional=False,
 )
 valence_model, X_test, y_test = train_lstm(
@@ -66,9 +68,9 @@ valence_model, X_test, y_test = train_lstm(
     None,
     valence_target,
     None,
-    lr=0.001,
+    lr=0.0001,
     epochs=10,
-    units=1024,
-    batch_size=1024,
+    units=512,
+    batch_size=256,
     bidirectional=False,
 )

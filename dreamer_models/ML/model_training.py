@@ -145,10 +145,10 @@ def train_lstm(
 
     cbs = [
         callbacks.EarlyStopping(
-            monitor="loss", patience=patience, restore_best_weights=True
+            monitor="accuracy", patience=patience, restore_best_weights=True, mode='max'
         ),
         callbacks.ReduceLROnPlateau(
-            monitor="loss", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6
+            monitor="accuracy", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6, mode='max'
         ),
     ]
 

@@ -50,9 +50,9 @@ arousal_model, X_test_eval, y_test_eval = train_lstm(
     arousal_target,
     None,
     lr=0.0001,
-    epochs=10,
-    units=512,
-    batch_size=256,
+    epochs=25,
+    units=128,
+    batch_size=128,
     bidirectional=False,
 )
 valence_model, X_test, y_test = train_lstm(
@@ -61,8 +61,8 @@ valence_model, X_test, y_test = train_lstm(
     valence_target,
     None,
     lr=0.0001,
-    epochs=10,
-    units=512,
-    batch_size=256,
+    epochs=25,
+    units=128,
+    batch_size=128,
     bidirectional=False,
 )

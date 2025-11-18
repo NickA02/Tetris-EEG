@@ -181,7 +181,7 @@ def train_lstm_regressor(
     bidirectional: bool = True,
     patience: int = 8,
     verbose: int = 0,
-    random_seed: int = None,
+    random_seed: int = 42,
 ):
     if random_seed is not None:
         tf.keras.utils.set_random_seed(random_seed)

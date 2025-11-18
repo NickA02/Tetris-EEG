@@ -55,13 +55,16 @@ def omit_patient_video(  # Leave-N-trials-out for one patient, with optional man
     holdout_videos: (
         list[int] | None
     ) = None,
+    filename: str = "datasets/features_table.csv",
+    relabel = False,
 ):
     if trials < 1:
         raise ValueError("`trials` must be >= 1.")
-
-    df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
+    
+    df_main = read_table(filename).reset_index(drop=True)
     df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
-    # df_main = relabel_target_from_video_map(df_main)
+    if relabel is True:
+        df_main = relabel_target_from_video_map(df_main)
 
 
     if exclude_users:
@@ -191,9 +194,10 @@ def single_user_split(
     selected_user: int | None = None,
     holdout_videos: list[int] | None = None,
     random_state=None,
+    filename="datasets/feature_table.csv"
 ):
     """Splits one trial-user combination and returns only one user's data in the train set."""
-    df = read_table("datasets/features_table.csv").reset_index(drop=True)
+    df = read_table(filename).reset_index(drop=True)
     df = df.drop(columns=["Unnamed: 0"], errors="ignore")
     # df = remove_outlier_videos(df, target)
     df = relabel_target_from_video_map(df)

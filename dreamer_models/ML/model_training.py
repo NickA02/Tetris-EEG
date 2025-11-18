@@ -156,6 +156,7 @@ def train_lstm(
         X_train_arr,
         y_train_arr,
         epochs=epochs,
+        validation_split=0.15,
         batch_size=batch_size,
         verbose=verbose,
         callbacks=cbs,

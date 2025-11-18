@@ -191,7 +191,7 @@ def train_lstm(
         return_sequences=False,
     )
     x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
-    x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
+    # x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
     x = layers.Dense(units // 2, activation="leaky_relu")(x)
     x = layers.Dropout(dropout)(x)
     out = layers.Dense(1, activation="sigmoid")(x)

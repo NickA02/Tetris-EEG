@@ -61,7 +61,7 @@ def omit_patient_video(  # Leave-N-trials-out for one patient, with optional man
 
     df_main = read_table("datasets/features_table.csv").reset_index(drop=True)
     df_main = df_main.drop(columns=["Unnamed: 0"], errors="ignore")
-    df_main = relabel_target_from_video_map(df_main)
+    # df_main = relabel_target_from_video_map(df_main)
 
 
     if exclude_users:

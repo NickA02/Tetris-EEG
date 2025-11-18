@@ -74,6 +74,7 @@ def featurize_cur_sesh_psd(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     n = len(df)
+    
     shannons = eeg.shannons_entropy(df)
     asymm = compute_asymmetry_from_psd(df)
 
@@ -132,4 +133,4 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
     print("arousal preds:", float(arousal.mean())*5)
     print("valence preds:", float(valence.mean())*5)
 
-    return float(arousal.mean()), float(valence.mean())
+    return float(arousal.mean()*5), float(valence.mean()*5)

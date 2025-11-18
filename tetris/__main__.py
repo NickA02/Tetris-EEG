@@ -5,6 +5,11 @@ from .difficulties import *
 from .game import Game
 from experiment import experiment as exp
 import time
+import os
+import random
+
+seed_value = int.from_bytes(os.urandom(8), byteorder='big')
+random.seed(seed_value)
 
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -14,11 +19,11 @@ font = pygame.font.SysFont("Arial", 24)
 clock = pygame.time.Clock()
 
 difficulties = [
-    # increase_difficulty_lines_cleared,
+    increase_difficulty_lines_cleared,
     # constant_difficulty,
-    increase_difficulty_adaptive,
+    # increase_difficulty_adaptive,
     # increase_difficulty_blocks_placed,
-    increase_difficulty_minimize_emotion_distance
+    # increase_difficulty_minimize_emotion_distance
 ]
 
 difficulty = randint(0, len(difficulties) - 1)

@@ -4,23 +4,23 @@ from .utils import read_table
 
 BASIS_DICT = {
     0: {"valence": 4, "arousal": 1},  # calmness
-    1: {"valence": 3, "arousal": 5},  # surprise
-    2: {"valence": 5, "arousal": 3},  # amusement
-    3: {"valence": 1, "arousal": 5},  # fear
-    4: {"valence": 5, "arousal": 5},  # excitement
-    5: {"valence": 1, "arousal": 4},  # disgust
-    6: {"valence": 5, "arousal": 4},  # happiness
-    7: {"valence": 1, "arousal": 5},  # anger
-    8: {"valence": 1, "arousal": 2},  # sadness
-    9: {"valence": 1, "arousal": 4},  # disgust
     10: {"valence": 4, "arousal": 1},  # calmness
-    11: {"valence": 5, "arousal": 3},  # amusement
-    12: {"valence": 5, "arousal": 4},  # happiness
-    13: {"valence": 1, "arousal": 5},  # anger
-    14: {"valence": 1, "arousal": 5},  # fear
-    15: {"valence": 5, "arousal": 5},  # excitement
-    16: {"valence": 1, "arousal": 2},  # sadness
+    1: {"valence": 3, "arousal": 5},  # surprise
     17: {"valence": 3, "arousal": 5},  # surprise
+    2: {"valence": 5, "arousal": 4},  # amusement
+    11: {"valence": 5, "arousal": 4},  # amusement
+    3: {"valence": 1, "arousal": 5},  # fear
+    14: {"valence": 1, "arousal": 5},  # fear
+    4: {"valence": 5, "arousal": 5},  # excitement
+    15: {"valence": 5, "arousal": 5},  # excitement
+    5: {"valence": 1, "arousal": 3},  # disgust
+    9: {"valence": 1, "arousal": 3},  # disgust
+    6: {"valence": 5, "arousal": 3},  # happiness
+    12: {"valence": 5, "arousal": 3},  # happiness
+    7: {"valence": 1, "arousal": 4},  # anger
+    13: {"valence": 1, "arousal": 4},  # anger
+    8: {"valence": 1, "arousal": 2},  # sadness
+    16: {"valence": 1, "arousal": 2},  # sadness
 }
 
 

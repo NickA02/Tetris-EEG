@@ -6,17 +6,17 @@ Workflow:
 - You pass your EEGO CSV file.
 - The tool computes how long the recording is (via timestamp or time_elapsed).
 - It then shows a simple GUI, one minute at a time:
-    Minute 0 (0.0s – 59.9s)
+    Minute 0 (0.0s - 59.9s)
     [Valence slider]  [Arousal slider]
     [Prev] [Next] [Save & Exit]
-- You choose ratings on configurable scales (e.g. 1–9 or 1–5).
+- You choose ratings on configurable scales (e.g. 1-9 or 1-5).
 - On Save, it writes:
     1) A minute-wise annotations CSV (minute,start_sec,end_sec,valence,arousal)
     2) An updated EEGO CSV with those ratings attached to every row.
 
 Example:
     python rate_minute_affect_gui.py \\
-        --eego-csv "EEG Prediction/datasets/Bespoke/EEGO.csv" \\
+        --eego-csv "dreamer_models/datasets/EEGO.csv" \\
         --scale-min 1 --scale-max 9
 """
 from __future__ import annotations

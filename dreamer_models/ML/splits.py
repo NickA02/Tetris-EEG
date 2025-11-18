@@ -117,9 +117,10 @@ def omit_patient_video(  # Leave-N-trials-out for one patient, with optional man
 
     held_out_trials = [(chosen_patient, int(v)) for v in held_videos]
 
-    X = df_main.drop(
-        columns=["patient_index", "video_index", "arousal", "valence"], errors="ignore"
-    )
+    # X = df_main.drop(
+    #     columns=["arousal", "valence"], errors="ignore"
+    # )
+    X = df_main
     y = df_main[target]
 
     trial_id = pd.Series(
@@ -161,8 +162,12 @@ def omit_patient(  # PERFORMS LOSO (Leave-one--out)
     #     drop=True
     # )
 
+    # X = df_main.drop(
+    #     columns=["arousal", "valence"],
+    #     errors="ignore",
+    # )
     X = df_main.drop(
-        columns=["patient_index", "video_index", "arousal", "valence"],
+        columns=["arousal", "valence"],
         errors="ignore",
     )
     y = df_main[target]
@@ -214,10 +219,10 @@ def single_user_split(
         holdouts = np.array(sorted(set(holdout_videos)), dtype=int)
 
     # print(selected_user, holdouts)
-
-    X = df.drop(
-        columns=["patient_index", "video_index", "arousal", "valence"], errors="ignore"
-    )
+    #  X = df.drop(
+    #     columns=["arousal", "valence"], errors="ignore"
+    # )
+    X = df
     y = df[target]
 
     mask = df["patient_index"] == selected_user

@@ -77,8 +77,55 @@ def train_knn_regressor(
         n_neighbors=neighbors, weights=weights, n_jobs=n_jobs, p=1
     )
     knn.fit(X_train, y_train)
-
     return knn, X_test, y_test
+
+
+def build_lstm_sequences(
+    df: pd.DataFrame,
+    feature_cols: list[str],
+    target_col: str = "arousal",
+    thresh: float = 3.8,
+    fixed_T: int | None = None,  # e.g. 15 windows for 60s if you want
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Build (num_trials, timesteps, n_features) and (num_trials,) from a window-level DF.
+
+    Each trial = (patient_index, video_index).
+    Rows for each trial must be contiguous and in temporal order.
+    """
+    # Group by trial; we rely on the existing row order for time
+    groups = df.groupby(["patient_index", "video_index"], sort=False)
+
+    X_seqs: list[np.ndarray] = []
+    y_labels: list[float] = []
+
+    for (_, _), g in groups:
+        # (Ti, n_features) for this trial
+        X_seq = g[feature_cols].to_numpy(dtype=np.float32)
+
+        # trial-level label (same for all windows in that trial)
+        y_val = g[target_col].iloc[0]
+        y_bin = 1.0 if y_val > thresh else 0.0
+
+        X_seqs.append(X_seq)
+        y_labels.append(y_bin)
+
+    # Decide sequence length
+    if fixed_T is None:
+        fixed_T = max(seq.shape[0] for seq in X_seqs)
+
+    n_features = X_seqs[0].shape[1]
+    X_padded = np.zeros((len(X_seqs), fixed_T, n_features), dtype=np.float32)
+
+    for i, seq in enumerate(X_seqs):
+        T = seq.shape[0]
+        if T >= fixed_T:
+            X_padded[i, :, :] = seq[:fixed_T, :]
+        else:
+            X_padded[i, :T, :] = seq  # pad remainder with zeros
+
+    y_arr = np.asarray(y_labels, dtype=np.float32)
+    return X_padded, y_arr
 
 
 def train_lstm(
@@ -105,21 +152,33 @@ def train_lstm(
     X_test_arr = np.asarray(X_test).astype(np.float32, copy=False)
     y_train_arr = np.asarray(y_train)
 
-    y_train_arr = np.array(
-        [1 if str(v).lower() == "high" else 0 for v in y_train_arr], dtype=np.float32
-    )
+    # Handle labels flexibly: numeric 0/1 or "high"/"low"
+    if y_train_arr.dtype.kind in "ifu":  # int/float
+        y_train_arr = y_train_arr.astype(np.float32)
+    else:
+        y_train_arr = np.array(
+            [1.0 if str(v).lower() == "high" else 0.0 for v in y_train_arr],
+            dtype=np.float32,
+        )
+
     if y_test is not None:
         y_test_arr = np.asarray(y_test)
-        y_test_arr = np.array(
-            [1 if str(v).lower() == "high" else 0 for v in y_test_arr], dtype=np.float32
-        )
+        if y_test_arr.dtype.kind in "ifu":
+            y_test_arr = y_test_arr.astype(np.float32)
+        else:
+            y_test_arr = np.array(
+                [1.0 if str(v).lower() == "high" else 0.0 for v in y_test_arr],
+                dtype=np.float32,
+            )
     else:
         y_test_arr = None
 
-    if X_train_arr.ndim == 2:
-        X_train_arr = X_train_arr[:, None, :]
-    if X_test_arr.ndim == 2:
-        X_test_arr = X_test_arr[:, None, :]
+    print("X_train_arr shape:", X_train_arr.shape)
+
+    if X_train_arr.ndim != 3:
+        raise ValueError(
+            f"X_train must be 3D (trials, timesteps, features), got {X_train_arr.shape}"
+        )
 
     timesteps = X_train_arr.shape[1]
     n_features = X_train_arr.shape[2]
@@ -131,6 +190,7 @@ def train_lstm(
         recurrent_dropout=recurrent_dropout,
         return_sequences=False,
     )
+    x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
     x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
     x = layers.Dense(units // 2, activation="leaky_relu")(x)
     x = layers.Dropout(dropout)(x)
@@ -145,10 +205,17 @@ def train_lstm(
 
     cbs = [
         callbacks.EarlyStopping(
-            monitor="accuracy", patience=patience, restore_best_weights=True, mode='max'
+            monitor="val_accuracy",  # better than training accuracy
+            patience=patience,
+            restore_best_weights=True,
+            mode="max",
         ),
         callbacks.ReduceLROnPlateau(
-            monitor="accuracy", factor=0.5, patience=max(2, patience // 2), min_lr=1e-6, mode='max'
+            monitor="val_accuracy",
+            factor=0.5,
+            patience=max(2, patience // 2),
+            min_lr=1e-6,
+            mode="max",
         ),
     ]
 
@@ -192,10 +259,7 @@ def train_lstm_regressor(
     y_train_arr = np.asarray(y_train, dtype=np.float32)
     y_test_arr = np.asarray(y_test, dtype=np.float32)
 
-    if X_train_arr.ndim == 2:
-        X_train_arr = X_train_arr[:, None, :]
-    if X_test_arr.ndim == 2:
-        X_test_arr = X_test_arr[:, None, :]
+    X_test_arr
 
     timesteps = X_train_arr.shape[1]
     n_features = X_train_arr.shape[2]

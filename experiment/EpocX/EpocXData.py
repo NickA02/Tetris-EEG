@@ -7,7 +7,7 @@ from dreamer_models.predictor_model import arousal_model, valence_model, feature
 import numpy as np
 
 
-FS = 128 
+FS = 128
 
 
 def save_eeg_data(
@@ -74,7 +74,7 @@ def featurize_cur_sesh_psd(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     n = len(df)
-    
+
     shannons = eeg.shannons_entropy(df)
     asymm = compute_asymmetry_from_psd(df)
 
@@ -112,25 +112,42 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
         ]
     )
 
-    batch = batch.sort_index(axis=1)
+    feature_cols = [c for c in features if c in batch.columns]
+    batch = batch.reindex(columns=feature_cols)
     batch = batch.reset_index(drop=True)
 
-    batch = batch.reindex(columns=features)
-
-    # Convert to numpy
     X = batch.to_numpy().astype("float32", copy=False)
 
-    print("Before reshape, X.shape =", X.shape)
-    if X.ndim == 2:
-        X = np.expand_dims(X, axis=1)
+    print("Before reshape, X.shape =", X.shape)  # (timesteps, n_features)
 
-    print("After reshape, X.shape  =", X.shape)
+    X = batch.to_numpy().astype("float32", copy=False)
+    T, F = X.shape
+
+    _, expected_T, expected_F = arousal_model.input_shape
+    if F != expected_F:
+        raise ValueError(f"Feature mismatch: X has {F}, model expects {expected_F}")
+
+    if T > expected_T:
+        X = X[-expected_T:, :]
+    elif T < expected_T:
+        pad_len = expected_T - T
+        pad = np.zeros((pad_len, F), dtype=X.dtype)
+        X = np.concatenate([X, pad], axis=0)
+
+    X = np.expand_dims(X, axis=0)
+
+    print("After reshape, X.shape  =", X.shape)  # (1, timesteps, n_features)
     print("Model expects:", arousal_model.input_shape)
+    print(X)
 
     arousal = arousal_model.predict(X).ravel()
     valence = valence_model.predict(X).ravel()
+    print(arousal)
 
-    print("arousal preds:", float(arousal.mean())*5)
-    print("valence preds:", float(valence.mean())*5)
+    arousal_score = float(np.mean(arousal) * 5)
+    valence_score = float(np.mean(valence) * 5)
 
-    return float(arousal.mean()*5), float(valence.mean()*5)
+    print("arousal mean * 5:", arousal_score)
+    print("valence mean * 5:", valence_score)
+
+    return arousal_score, valence_score

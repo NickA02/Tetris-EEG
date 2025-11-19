@@ -110,7 +110,6 @@ def build_lstm_sequences(
         X_seqs.append(X_seq)
         y_labels.append(y_bin)
 
-    # Decide sequence length
     if fixed_T is None:
         fixed_T = max(seq.shape[0] for seq in X_seqs)
 
@@ -122,7 +121,7 @@ def build_lstm_sequences(
         if T >= fixed_T:
             X_padded[i, :, :] = seq[:fixed_T, :]
         else:
-            X_padded[i, :T, :] = seq  # pad remainder with zeros
+            X_padded[i, :T, :] = seq
 
     y_arr = np.asarray(y_labels, dtype=np.float32)
     return X_padded, y_arr
@@ -205,7 +204,7 @@ def train_lstm(
 
     cbs = [
         callbacks.EarlyStopping(
-            monitor="val_accuracy",  # better than training accuracy
+            monitor="val_accuracy",
             patience=patience,
             restore_best_weights=True,
             mode="max",

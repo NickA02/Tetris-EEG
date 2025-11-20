@@ -9,13 +9,17 @@ from tensorflow.keras.models import load_model
 
 AROUSAL_MODEL_PATH = "models/arousal_lstm.keras"
 VALENCE_MODEL_PATH = "models/valence_lstm.keras"
-X = read_table("datasets/experiment_feature_table.csv")
+X = read_table("datasets/experiment_features_table.csv")
 
 features = filter_features(
     X.columns,
     remove_bands=["gamma", "delta"],
 )
-print(features)
+features.remove('Unnamed: 0')
+features.remove('patient_index')
+features.remove('video_index')
+features.remove('arousal')
+features.remove('valence')
 
 
 os.makedirs("models", exist_ok=True)
@@ -27,7 +31,7 @@ if os.path.exists(AROUSAL_MODEL_PATH) and os.path.exists(VALENCE_MODEL_PATH):
 
 else:
     print("Saved models not found. Training from scratch...")
-    features = [c for c in features if c  in X.columns]
+    features = [c for c in features if c in X.columns]
     X_train_seq, arousal_train_seq = build_lstm_sequences(
         X,
         features,
@@ -51,6 +55,7 @@ else:
     )
     arousal_model.save(AROUSAL_MODEL_PATH)
     print(f"Saved arousal model to {AROUSAL_MODEL_PATH}")
+
 
     X_train_seq, valence_train_seq = build_lstm_sequences(
         X,

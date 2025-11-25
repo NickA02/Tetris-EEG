@@ -2,7 +2,7 @@
 from .game import Game
 from .flow_computation import delta_s_vec
 
-MAX_SPEED_CHANGE = 75
+MAX_SPEED_CHANGE = 140
 
 def increase_difficulty_lines_cleared(game: Game, arousal: int, valence: int, max_speed=100, min_speed=600):
     """Increase fall speed based on lines cleared."""

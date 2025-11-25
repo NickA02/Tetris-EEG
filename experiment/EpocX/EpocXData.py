@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import eegproc as eeg
 from dreamer_models.ML.utils import compute_asymmetry_from_psd
-from dreamer_models.predictor_model_old import arousal_model, valence_model, features
+from dreamer_models.predictor_model import arousal_model, valence_model, features
 import numpy as np
 
 
@@ -146,11 +146,6 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
 
     arousal_score = float(np.mean(arousal) * 5)
     valence_score = float(np.mean(valence) * 5)
-
-    if np.isnan(arousal_score):
-        arousal_score = 2.2
-    if np.isnan(valence_score):
-        valence_score = 2.2
 
     print("arousal mean * 5:", arousal_score)
     print("valence mean * 5:", valence_score)

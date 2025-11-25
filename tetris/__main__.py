@@ -21,9 +21,9 @@ clock = pygame.time.Clock()
 difficulties = [
     #increase_difficulty_lines_cleared,
     # constant_difficulty,
-    # increase_difficulty_adaptive,
+    increase_difficulty_adaptive,
     # increase_difficulty_blocks_placed,
-    increase_difficulty_minimize_emotion_distance
+    # increase_difficulty_minimize_emotion_distance
 ]
 
 difficulty = randint(0, len(difficulties) - 1)
@@ -79,7 +79,7 @@ def main():
     exp.EpocX.pow_data_batch.drop(exp.EpocX.pow_data_batch.index, inplace=True)
 
     fall_time = 0
-    fall_speed = 600  # ms
+    fall_speed = 450  # ms
     min_fall_speed = 50  # ms
     running = True
     move_delay = 80  # ms between moves when holding

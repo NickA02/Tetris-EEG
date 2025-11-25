@@ -129,20 +129,32 @@ def build_lstm_sequences(
 import numpy as np
 import pandas as pd
 from typing import List, Tuple, Optional
+import numpy as np
+import pandas as pd
+from typing import List, Tuple, Optional
 
 def build_eego_lstm_sequences(
     df: pd.DataFrame,
     feature_cols: List[str],
-    target_col: str = "arousal",
-    thresh: float = 3.8,
+    target_col: str = "affect_arousal",  # or "affect_valence", "arousal", etc.
+    thresh: float = 3.0,
     fixed_T: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    groups = df.groupby(["user_id", "session_id"], sort=False)
+    """
+    Build (num_trials, timesteps, n_features) and (num_trials,) from EEGo
+    window-level data.
+
+    Each trial = (user_id, session_id, affect_minute).
+
+    Rows for each trial should correspond to contiguous windows in time,
+    sorted by time_elapsed (or timestamp).
+    """
+    groups = df.groupby(["user_id", "session_id", "affect_minute"], sort=False)
 
     X_seqs: list[np.ndarray] = []
     y_labels: list[float] = []
 
-    for (_, _), g in groups:
+    for (_, _, _), g in groups:
         if "time_elapsed" in g.columns:
             g = g.sort_values("time_elapsed")
         elif "timestamp" in g.columns:
@@ -150,7 +162,10 @@ def build_eego_lstm_sequences(
 
         X_seq = g[feature_cols].to_numpy(dtype=np.float32)
 
-        y_val = g[target_col].iloc[0]
+        y_vals = g[target_col].values
+        assert np.allclose(y_vals, y_vals[0]), "Label not constant within group!"
+
+        y_val = float(y_vals[0])
         y_bin = 1.0 if y_val > thresh else 0.0
 
         X_seqs.append(X_seq)
@@ -217,8 +232,6 @@ def train_lstm(
             )
     else:
         y_test_arr = None
-
-    print("X_train_arr shape:", X_train_arr.shape)
 
     if X_train_arr.ndim != 3:
         raise ValueError(

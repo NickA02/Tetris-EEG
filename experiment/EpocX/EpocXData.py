@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import eegproc as eeg
 from dreamer_models.ML.utils import compute_asymmetry_from_psd
-from dreamer_models.predictor_model import arousal_model, valence_model, features
+from dreamer_models.predictor_model_old import arousal_model, valence_model, features
 import numpy as np
 
 

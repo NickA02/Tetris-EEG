@@ -147,6 +147,11 @@ def predict_flow(featurized_batch: pd.DataFrame) -> int:
     arousal_score = float(np.mean(arousal) * 5)
     valence_score = float(np.mean(valence) * 5)
 
+    if np.isnan(arousal_score):
+        arousal_score = 2.2
+    if np.isnan(valence_score):
+        valence_score = 2.2
+
     print("arousal mean * 5:", arousal_score)
     print("valence mean * 5:", valence_score)
 

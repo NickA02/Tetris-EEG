@@ -22,6 +22,7 @@ features.remove('arousal')
 features.remove('valence')
 
 
+
 os.makedirs("models", exist_ok=True)
 
 if os.path.exists(AROUSAL_MODEL_PATH) and os.path.exists(VALENCE_MODEL_PATH):
@@ -37,6 +38,7 @@ else:
         features,
         target_col="arousal",
         thresh=3.8,
+        fixed_T=76
     )
     print("arousal_train counts:", np.bincount(arousal_train_seq.astype(int)))
 
@@ -48,7 +50,7 @@ else:
         lr=0.0001,
         epochs=100,
         units=512,
-        batch_size=128,
+        batch_size=64,
         dropout=0.4,
         recurrent_dropout=0.2,
         bidirectional=True,
@@ -62,6 +64,7 @@ else:
         features,
         target_col="valence",
         thresh=3.8,
+        fixed_T=76
     )
     print("valence_train counts:", np.bincount(valence_train_seq.astype(int)))
 
@@ -73,7 +76,7 @@ else:
         lr=0.0001,
         epochs=100,
         units=512,
-        batch_size=128,
+        batch_size=64,
         dropout=0.4,
         recurrent_dropout=0.2,
         bidirectional=True,

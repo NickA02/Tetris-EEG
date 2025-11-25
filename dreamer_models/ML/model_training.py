@@ -126,6 +126,52 @@ def build_lstm_sequences(
     y_arr = np.asarray(y_labels, dtype=np.float32)
     return X_padded, y_arr
 
+import numpy as np
+import pandas as pd
+from typing import List, Tuple, Optional
+
+def build_eego_lstm_sequences(
+    df: pd.DataFrame,
+    feature_cols: List[str],
+    target_col: str = "arousal",
+    thresh: float = 3.8,
+    fixed_T: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    groups = df.groupby(["user_id", "session_id"], sort=False)
+
+    X_seqs: list[np.ndarray] = []
+    y_labels: list[float] = []
+
+    for (_, _), g in groups:
+        if "time_elapsed" in g.columns:
+            g = g.sort_values("time_elapsed")
+        elif "timestamp" in g.columns:
+            g = g.sort_values("timestamp")
+
+        X_seq = g[feature_cols].to_numpy(dtype=np.float32)
+
+        y_val = g[target_col].iloc[0]
+        y_bin = 1.0 if y_val > thresh else 0.0
+
+        X_seqs.append(X_seq)
+        y_labels.append(y_bin)
+
+    if fixed_T is None:
+        fixed_T = max(seq.shape[0] for seq in X_seqs)
+
+    n_features = X_seqs[0].shape[1]
+    X_padded = np.zeros((len(X_seqs), fixed_T, n_features), dtype=np.float32)
+
+    for i, seq in enumerate(X_seqs):
+        T = seq.shape[0]
+        if T >= fixed_T:
+            X_padded[i, :, :] = seq[:fixed_T, :]
+        else:
+            X_padded[i, :T, :] = seq
+
+    y_arr = np.asarray(y_labels, dtype=np.float32)
+    return X_padded, y_arr
+
 
 def train_lstm(
     X_train: pd.DataFrame | np.ndarray,
@@ -190,7 +236,13 @@ def train_lstm(
         return_sequences=False,
     )
     x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
-    # x = layers.Bidirectional(lstm_block)(inp) if bidirectional else lstm_block(inp)
+    # lstm_block2 = layers.LSTM(
+    #     units,
+    #     dropout=dropout,
+    #     recurrent_dropout=recurrent_dropout,
+    #     return_sequences=False,
+    # )
+    # x = layers.Bidirectional(lstm_block2)(x) if bidirectional else lstm_block2(x)
     x = layers.Dense(units // 2, activation="leaky_relu")(x)
     x = layers.Dropout(dropout)(x)
     out = layers.Dense(1, activation="sigmoid")(x)

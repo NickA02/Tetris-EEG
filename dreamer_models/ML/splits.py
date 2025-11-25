@@ -5,6 +5,23 @@ from sklearn.model_selection import train_test_split
 from .labels import *
 
 
+def omit_eego_sesh(filename="datasets/EEGo_labeled.csv", omit_session_ids: list[str] = None):
+    df = pd.read_csv(filename)
+
+    if omit_session_ids is None:
+        return df.reset_index(drop=True)
+
+    if isinstance(omit_session_ids, str):
+        omit_set = {omit_session_ids}
+    else:
+        omit_set = set(omit_session_ids)
+
+    mask = ~df["session_id"].isin(omit_set)
+    df_omit = df.loc[mask].reset_index(drop=True)
+
+    return df_omit
+
+
 def random_train_test_split(
     test_size: float = 0.1,
     target: str = "arousal",
@@ -195,9 +212,9 @@ def omit_patient(  # PERFORMS LOSO (Leave-one--out)
 
 def single_user_split(
     target: str,
-    k_holdouts: int,
     selected_user: int | None = None,
     holdout_videos: list[int] | None = None,
+    k_holdouts: int = 0,
     random_state=None,
     filename="datasets/feature_table.csv"
 ):
